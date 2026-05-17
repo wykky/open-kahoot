@@ -21,7 +21,7 @@ export default function UserMenu() {
 
   if (status === "loading") {
     return (
-      <div className="p-2 sm:px-3 sm:py-2 bg-black text-yellow-400 rounded-lg border-2 border-yellow-400 text-sm font-bold shadow-md">
+      <div className="p-3 sm:px-3 sm:py-2 bg-black text-yellow-400 rounded-lg border-2 border-yellow-400 text-sm font-bold shadow-md">
         ...
       </div>
     );
@@ -31,7 +31,7 @@ export default function UserMenu() {
     return (
       <button
         onClick={() => signIn()}
-        className="flex items-center gap-2 p-2 sm:px-3 sm:py-2 rounded-lg bg-yellow-400 text-black border-2 border-black hover:bg-black hover:text-yellow-400 transition-colors text-sm font-bold shadow-md"
+        className="flex items-center gap-2 p-3 sm:px-3 sm:py-2 rounded-lg bg-yellow-400 text-black border-2 border-black hover:bg-black hover:text-yellow-400 transition-colors text-sm font-bold shadow-md"
         aria-label="Sign in with Atenu"
         title="Sign in"
       >
@@ -47,7 +47,7 @@ export default function UserMenu() {
     <div className="relative inline-block" ref={ref}>
       <button
         onClick={() => setOpen(!open)}
-        className="flex items-center gap-2 p-1 sm:p-1.5 rounded-lg bg-yellow-400 text-black border-2 border-black hover:opacity-90 transition-opacity text-sm font-bold shadow-md"
+        className="flex items-center gap-2 p-2 sm:p-1.5 rounded-lg bg-yellow-400 text-black border-2 border-black hover:opacity-90 transition-opacity text-sm font-bold shadow-md"
         aria-label={`User menu (${session.user?.name || session.user?.email})`}
       >
         <div className="w-7 h-7 rounded-full bg-black text-yellow-400 flex items-center justify-center font-bold text-sm">
@@ -63,7 +63,7 @@ export default function UserMenu() {
           </div>
           <button
             onClick={() => signOut()}
-            className="block w-full text-left px-4 py-2.5 text-sm text-black hover:bg-yellow-400 transition-colors flex items-center gap-2"
+            className="block w-full text-left px-4 py-3 text-sm text-black hover:bg-yellow-400 transition-colors flex items-center gap-2"
           >
             <LogOut className="w-4 h-4" />
             Sign Out

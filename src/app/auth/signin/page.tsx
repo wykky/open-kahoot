@@ -43,7 +43,7 @@ function SignInInner() {
           <TelegramLoginButton callbackUrl={callbackUrl} />
         </div>
 
-        <p className="text-xs text-gray-500 mt-6">
+        <p className="text-sm text-gray-500 mt-6">
           By signing in you agree to our{' '}
           <a href="https://atenu.org/terms-and-conditions/" className="underline">
             Terms

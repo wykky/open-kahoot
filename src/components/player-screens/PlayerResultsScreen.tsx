@@ -31,7 +31,7 @@ export default function PlayerResultsScreen({
       {/* Question + correct answer highlight */}
       {showAnswers && currentQuestion && (
         <div className="bg-gray-50 rounded-xl p-4 sm:p-5 mb-5 border border-gray-200 text-left">
-          <p className="text-sm font-bold text-gray-600 uppercase tracking-wide mb-2">
+          <p className="text-base font-semibold text-black mb-2 leading-snug break-words">
             {currentQuestion.question}
           </p>
           <div className="space-y-2 mt-3">
