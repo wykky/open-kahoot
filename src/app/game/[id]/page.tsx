@@ -432,6 +432,9 @@ export default function GamePage() {
         isPlayer={isPlayer}
         questionStats={state.questionStats}
         personalResult={state.personalResult}
+        currentQuestion={state.currentQuestion}
+        selectedAnswer={state.selectedAnswer}
+        game={state.game}
         onShowLeaderboard={showLeaderboard}
       />
     );

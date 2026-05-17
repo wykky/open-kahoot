@@ -6,7 +6,7 @@ import { getGradient } from '@/lib/palette';
 import AnimatedIcon from '@/components/AnimatedIcon';
 import HostResultsScreen from '@/components/host-screens/HostResultsScreen';
 import PlayerResultsScreen from '@/components/player-screens/PlayerResultsScreen';
-import type { GameStats, PersonalResult } from '@/types/game';
+import type { GameStats, PersonalResult, Question, Game } from '@/types/game';
 
 interface GameResultsPhaseScreenProps {
   isHost: boolean;
@@ -14,22 +14,30 @@ interface GameResultsPhaseScreenProps {
   questionStats: GameStats | null;
   personalResult: PersonalResult | null;
   onShowLeaderboard: () => void;
+  currentQuestion?: Question | null;
+  selectedAnswer?: number | null;
+  game?: Game | null;
 }
 
-export default function GameResultsPhaseScreen({ 
-  isHost, 
-  isPlayer, 
-  questionStats, 
-  personalResult, 
-  onShowLeaderboard 
+export default function GameResultsPhaseScreen({
+  isHost,
+  isPlayer,
+  questionStats,
+  personalResult,
+  onShowLeaderboard,
+  currentQuestion,
+  selectedAnswer,
+  game
 }: GameResultsPhaseScreenProps) {
   const { t } = useTranslation();
-  // Host view - Show full statistics
+  const showOnPlayers = game?.settings.showQuestionOnPlayers ?? true;
+
+  // Host view
   if (isHost && questionStats) {
     return (
       <div className={`min-h-screen ${getGradient('results')} p-8`}>
         <div className="container mx-auto max-w-4xl shadow-[0px_20px_30px_-10px_rgba(0,_0,_0,_0.1)]">
-          <HostResultsScreen 
+          <HostResultsScreen
             questionStats={questionStats}
             onShowLeaderboard={onShowLeaderboard}
           />
@@ -38,18 +46,22 @@ export default function GameResultsPhaseScreen({
     );
   }
 
-  // Player view - Show personal competitive results
+  // Player view
   if (isPlayer && personalResult) {
     return (
       <div className={`min-h-screen ${getGradient(personalResult.wasCorrect ? 'correct' : 'incorrect')} p-8`}>
         <div className="container mx-auto max-w-2xl shadow-[0px_20px_30px_-10px_rgba(0,_0,_0,_0.1)]">
-          <PlayerResultsScreen personalResult={personalResult} />
+          <PlayerResultsScreen
+            personalResult={personalResult}
+            currentQuestion={showOnPlayers ? currentQuestion ?? undefined : undefined}
+            selectedAnswer={selectedAnswer}
+          />
         </div>
       </div>
     );
   }
 
-  // Fallback if data isn't ready yet
+  // Fallback
   return (
     <div className={`min-h-screen ${getGradient('waiting')} flex items-center justify-center p-8`}>
       <div className="text-center">
@@ -59,4 +71,4 @@ export default function GameResultsPhaseScreen({
       </div>
     </div>
   );
-} 
+}
