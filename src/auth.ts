@@ -5,12 +5,26 @@ import { createHash, createHmac } from "crypto";
 
 // Verify Telegram Login Widget payload per Telegram's spec.
 // https://core.telegram.org/widgets/login#checking-authorization
+const TELEGRAM_FIELDS = new Set([
+  "id",
+  "first_name",
+  "last_name",
+  "username",
+  "photo_url",
+  "auth_date",
+]);
+
 function verifyTelegramAuth(
   data: Record<string, string>,
   botToken: string
 ): boolean {
-  const { hash, ...rest } = data;
+  const { hash } = data;
   if (!hash || !botToken) return false;
+  // Only include Telegram's signed fields — exclude csrfToken, callbackUrl, etc.
+  const rest: Record<string, string> = {};
+  for (const k of Object.keys(data)) {
+    if (TELEGRAM_FIELDS.has(k)) rest[k] = data[k];
+  }
   const dataCheckString = Object.keys(rest)
     .sort()
     .map((k) => `${k}=${rest[k]}`)
