@@ -77,19 +77,21 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
   callbacks: {
     async jwt({ token, user }) {
       if (user) {
-        // @ts-expect-error: user.id is present on first sign-in
-        token.id = user.id;
-        // @ts-expect-error: distinguish provider for VIP lookups later
-        token.provider = user.id?.startsWith("tg:") ? "telegram" : "google";
+        const u = user as { id?: string };
+        const t = token as Record<string, unknown>;
+        if (u.id) {
+          t.id = u.id;
+          t.provider = u.id.startsWith("tg:") ? "telegram" : "google";
+        }
       }
       return token;
     },
     async session({ session, token }) {
       if (token && session.user) {
-        // @ts-expect-error: extend session user
-        if (token.id) session.user.id = token.id;
-        // @ts-expect-error
-        if (token.provider) session.user.provider = token.provider;
+        const t = token as Record<string, unknown>;
+        const su = session.user as Record<string, unknown>;
+        if (t.id) su.id = t.id;
+        if (t.provider) su.provider = t.provider;
       }
       return session;
     },

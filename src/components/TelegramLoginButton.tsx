@@ -21,18 +21,14 @@ export default function TelegramLoginButton({
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
     window.onAtenuTelegramAuth = (user) => {
-      // Forward the verified payload to our NextAuth credentials provider
-      signIn('telegram', {
-        ...user,
-        callbackUrl,
-      });
+      signIn('telegram', { ...user, callbackUrl });
     };
 
-    if (!containerRef.current) return;
-
-    // Clear before re-mounting (handles HMR / re-renders)
-    containerRef.current.innerHTML = '';
+    container.innerHTML = '';
 
     const script = document.createElement('script');
     script.src = 'https://telegram.org/js/telegram-widget.js?22';
@@ -43,11 +39,11 @@ export default function TelegramLoginButton({
     script.setAttribute('data-onauth', 'onAtenuTelegramAuth(user)');
     script.setAttribute('data-request-access', 'write');
     script.setAttribute('data-userpic', 'true');
-    containerRef.current.appendChild(script);
+    container.appendChild(script);
 
     return () => {
       window.onAtenuTelegramAuth = undefined;
-      if (containerRef.current) containerRef.current.innerHTML = '';
+      container.innerHTML = '';
     };
   }, [callbackUrl, botUsername]);
 
