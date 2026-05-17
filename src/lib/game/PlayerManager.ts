@@ -1,6 +1,7 @@
 import { v4 as uuidv4 } from 'uuid';
 import type { Game, Player } from '@/types/game';
 import { issuePlayerToken, verifyPlayerToken } from './tokens';
+import { upsertPlayer, insertAnswer, updatePlayerScore } from '@/lib/db';
 
 export interface JoinGameResult {
   success: boolean;
@@ -23,7 +24,8 @@ export class PlayerManager {
     socketId: string,
     playerName: string,
     persistentId: string | null = null,
-    playerToken: string | null = null
+    playerToken: string | null = null,
+    userId: string | null = null
   ): JoinGameResult {
     // Reconnection attempt
     if (persistentId) {
@@ -34,6 +36,8 @@ export class PlayerManager {
         }
         existingPlayer.socketId = socketId;
         existingPlayer.isConnected = true;
+        // Phase 4: refresh DB record (link userId if newly signed in)
+        try { upsertPlayer(game.id, existingPlayer, userId); } catch (e) { console.error('[db] upsertPlayer failed:', e); }
         return {
           success: true,
           game,
@@ -66,6 +70,8 @@ export class PlayerManager {
       isConnected: true,
     };
     game.players.push(newPlayer);
+    // Phase 4: persist new player
+    try { upsertPlayer(game.id, newPlayer, userId); } catch (e) { console.error('[db] upsertPlayer failed:', e); }
     return {
       success: true,
       game,
@@ -139,6 +145,13 @@ export class PlayerManager {
   storeAnswersToHistory(game: Game): void {
     const question = game.questions[game.currentQuestionIndex];
     if (!question) return;
+    // Idempotent guard: storeAnswersToHistory fires in both executePreprationPhase AND
+    // executeFinishedPhase. For the last question both paths run — without this guard,
+    // the final question is recorded twice (once with the real answer, once empty after
+    // clearAnswers). Skip if records for this questionIndex already exist.
+    if (game.answerHistory.some((r) => r.questionIndex === game.currentQuestionIndex)) {
+      return;
+    }
     const questionStartTime = game.questionStartTime || Date.now();
 
     game.players.forEach((player) => {
@@ -153,7 +166,7 @@ export class PlayerManager {
           if (player.hasDyslexiaSupport) adjusted = timeUsedRatio * 0.8;
           pointsEarned = Math.max(0, Math.round(1000 * (1 - adjusted)));
         }
-        game.answerHistory.push({
+        const record = {
           playerId: player.id,
           playerName: player.name,
           questionIndex: game.currentQuestionIndex,
@@ -164,7 +177,10 @@ export class PlayerManager {
           pointsEarned,
           wasCorrect: wasCorrect && player.currentAnswer !== undefined,
           hasDyslexiaSupport: player.hasDyslexiaSupport || false,
-        });
+        };
+        game.answerHistory.push(record);
+        // Phase 4: persist answer
+        try { insertAnswer(game.id, record); } catch (e) { console.error('[db] insertAnswer failed:', e); }
       }
     });
   }
@@ -183,6 +199,8 @@ export class PlayerManager {
         player.score += pointsEarned;
         const supportStatus = player.hasDyslexiaSupport ? ' (with dyslexia support)' : '';
         console.log(`[PIN ${game.pin}] ${player.name} +${pointsEarned}${supportStatus} | Total: ${player.score}`);
+        // Phase 4: persist running score
+        try { updatePlayerScore(game.id, player.id, player.score); } catch (e) { console.error('[db] updatePlayerScore failed:', e); }
       }
     });
   }

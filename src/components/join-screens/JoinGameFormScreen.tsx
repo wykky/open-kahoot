@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { LogIn, Lock, Dice6 } from 'lucide-react';
+import { useSession } from 'next-auth/react';
 import { getSocket } from '@/lib/socket-client';
 import type { Game } from '@/types/game';
 import { gameConfig, featureConfig } from '@/lib/config';
@@ -16,6 +17,8 @@ const PLAYER_TOKEN_KEY = (pin: string) => `player_token_${pin}`;
 
 export default function JoinGameFormScreen() {
   const { t } = useTranslation();
+  const { data: session } = useSession();
+  const dbUserId = ((session?.user as { dbUserId?: string } | undefined)?.dbUserId) ?? null;
   const [pin, setPin] = useState('');
   const [playerName, setPlayerName] = useState('');
   const [isJoining, setIsJoining] = useState(false);
@@ -60,6 +63,7 @@ export default function JoinGameFormScreen() {
       playerName,
       persistentId,
       playerToken,
+      dbUserId,
       (success: boolean, game?: Game, playerId?: string, newPlayerToken?: string) => {
         setIsJoining(false);
         if (success && game && playerId) {

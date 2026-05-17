@@ -2,6 +2,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { randomInt } from 'crypto';
 import type { Game, Question, GameSettings, GamePhase } from '@/types/game';
 import { gameConfig } from '@/lib/config';
+import { insertGame, updateGameStatus, upsertPlayer } from '@/lib/db';
 
 const MAX_PIN_GENERATION_ATTEMPTS = 1000;
 
@@ -9,7 +10,13 @@ export class GameManager {
   private games: Map<string, Game> = new Map();
   private gamesByPin: Map<string, string> = new Map(); // pin -> gameId
 
-  createGame(hostSocketId: string, title: string, questions: Question[], settings: GameSettings): Game {
+  createGame(
+    hostSocketId: string,
+    title: string,
+    questions: Question[],
+    settings: GameSettings,
+    hostUserId: string | null = null
+  ): Game {
     const gameId = uuidv4();
     const hostId = uuidv4(); // Generate persistent ID for host
     const pin = this.generatePin();
@@ -38,6 +45,14 @@ export class GameManager {
 
     this.games.set(gameId, game);
     this.gamesByPin.set(pin, gameId);
+
+    // Phase 4: persist
+    try {
+      insertGame(game, hostUserId);
+      upsertPlayer(gameId, game.players[0], hostUserId);
+    } catch (e) {
+      console.error('[db] insertGame failed:', e);
+    }
 
     return game;
   }
@@ -71,6 +86,8 @@ export class GameManager {
     if (game) {
       game.phase = phase;
       game.status = phase; // Keep status in sync with phase for backwards compatibility
+      // Phase 4: persist
+      try { updateGameStatus(gameId, phase, game.currentQuestionIndex); } catch (e) { console.error('[db] updateGameStatus failed:', e); }
     }
   }
 

@@ -5,6 +5,7 @@ export const dynamic = 'force-dynamic';
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useRouter } from 'next/navigation';
+import { useSession } from 'next-auth/react';
 import { v4 as uuidv4 } from 'uuid';
 import Papa from 'papaparse';
 import jschardet from 'jschardet';
@@ -18,11 +19,15 @@ import type { Question, Game, Player, GameSettings } from '@/types/game';
 import HostGameLobbyScreen from '@/components/host-setup/HostGameLobbyScreen';
 import HostQuizCreationScreen from '@/components/host-setup/HostQuizCreationScreen';
 
-// Phase 2: persist the hostToken so it survives navigation from /host -> /game/[id]
+// Phase 2: hostToken in localStorage survives tab close + browser restart (5 min server-side grace).
 const HOST_TOKEN_KEY = (gameId: string) => `host_token_${gameId}`;
+const ACTIVE_HOST_GAME_KEY = 'atenu_live_active_host_game';
+const ACTIVE_GAME_STALE_MS = 10 * 60 * 1000; // pointer older than 10 min is discarded
 
 export default function HostPage() {
   const { t } = useTranslation();
+  const { data: session } = useSession();
+  const dbUserId = ((session?.user as { dbUserId?: string } | undefined)?.dbUserId) ?? null;
   const [questions, setQuestions] = useState<Question[]>([]);
   const [gameSettings, setGameSettings] = useState<GameSettings>({
     thinkTime: 5,
@@ -38,6 +43,68 @@ export default function HostPage() {
     enabled: questions.length > 0,
     message: t('host.quizCreation.unsavedWarning'),
   });
+
+  // Resume detection — runs once on mount
+  useEffect(() => {
+    let cancelled = false;
+    const tryResume = () => {
+      let pointerRaw: string | null = null;
+      try { pointerRaw = localStorage.getItem(ACTIVE_HOST_GAME_KEY); } catch {}
+      if (!pointerRaw) return;
+      let pointer: { gameId: string; pin: string; ts: number };
+      try { pointer = JSON.parse(pointerRaw); } catch {
+        try { localStorage.removeItem(ACTIVE_HOST_GAME_KEY); } catch {}
+        return;
+      }
+      if (!pointer.gameId || Date.now() - pointer.ts > ACTIVE_GAME_STALE_MS) {
+        try {
+          localStorage.removeItem(ACTIVE_HOST_GAME_KEY);
+          localStorage.removeItem(HOST_TOKEN_KEY(pointer.gameId));
+        } catch {}
+        return;
+      }
+      let token: string | null = null;
+      try { token = localStorage.getItem(HOST_TOKEN_KEY(pointer.gameId)); } catch {}
+      if (!token) {
+        try { localStorage.removeItem(ACTIVE_HOST_GAME_KEY); } catch {}
+        return;
+      }
+      const socket = getSocket();
+      socket.emit('validateGame', pointer.gameId, { hostToken: token }, (valid: boolean, gameData?: Game) => {
+        if (cancelled) return;
+        if (valid && gameData) {
+          setGame(gameData);
+          setHostToken(token);
+          // If the game is past lobby, jump straight to the live game view
+          if (gameData.status !== 'waiting') {
+            router.replace(`/game/${gameData.id}?host=true`);
+          }
+        } else {
+          // Game is gone (cleaned up / restarted) — purge stale pointers
+          try {
+            localStorage.removeItem(ACTIVE_HOST_GAME_KEY);
+            localStorage.removeItem(HOST_TOKEN_KEY(pointer.gameId));
+          } catch {}
+        }
+      });
+    };
+    tryResume();
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const discardActiveGame = () => {
+    if (!confirm('Discard the current game and start fresh? Players will be disconnected.')) return;
+    if (game && hostToken) {
+      try { getSocket().emit('endGame', game.id, hostToken); } catch {}
+    }
+    try {
+      if (game) localStorage.removeItem(HOST_TOKEN_KEY(game.id));
+      localStorage.removeItem(ACTIVE_HOST_GAME_KEY);
+    } catch {}
+    setGame(null);
+    setHostToken(null);
+  };
 
   useEffect(() => {
     const socket = getSocket();
@@ -214,11 +281,15 @@ export default function HostPage() {
     if (questions.length === 0) return;
     const socket = getSocket();
     const title = t('host.quizCreation.defaultTitle');
-    socket.emit('createGame', title, questions, gameSettings, (createdGame: Game, token: string) => {
+    socket.emit('createGame', title, questions, gameSettings, dbUserId, (createdGame: Game, token: string) => {
       setGame(createdGame);
       setHostToken(token);
       try {
-        sessionStorage.setItem(HOST_TOKEN_KEY(createdGame.id), token);
+        localStorage.setItem(HOST_TOKEN_KEY(createdGame.id), token);
+        localStorage.setItem(
+          ACTIVE_HOST_GAME_KEY,
+          JSON.stringify({ gameId: createdGame.id, pin: createdGame.pin, ts: Date.now() })
+        );
       } catch {}
       clearNavigationFlag();
     });

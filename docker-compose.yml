@@ -6,5 +6,9 @@ services:
     ports:
       - "127.0.0.1:8096:3000"
     env_file: .env.local
+    volumes:
+      # Phase 4: persistent SQLite. Survives container rebuilds.
+      # Backed up by Restic via the /opt path.
+      - /opt/stack/atenu-live/data:/app/data
     mem_limit: 1g
     cpus: 2

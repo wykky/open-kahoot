@@ -119,6 +119,7 @@ export interface ClientToServerEvents {
     title: string,
     questions: Question[],
     settings: GameSettings,
+    dbUserId: string | null,
     callback: (game: Game, hostToken: string) => void
   ) => void;
   joinGame: (
@@ -126,6 +127,7 @@ export interface ClientToServerEvents {
     playerName: string,
     persistentId: string | null,
     playerToken: string | null,
+    dbUserId: string | null,
     callback: (success: boolean, game?: Game, playerId?: string, playerToken?: string) => void
   ) => void;
   validateGame: (

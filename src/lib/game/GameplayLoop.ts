@@ -6,6 +6,7 @@ import type {
   GamePhase
 } from '@/types/game';
 import { GameManager, sanitizeGameForClient } from './GameManager';
+import { finishGame as dbFinishGame } from '@/lib/db';
 import { PlayerManager } from './PlayerManager';
 import { QuestionManager } from './QuestionManager';
 import { TimerManager } from './TimerManager';
@@ -208,10 +209,20 @@ export class GameplayLoop {
     console.log(`[PIN ${game.pin}] Game finished | Winner: ${winner ? `${winner.name} (${winner.score})` : 'none'}`);
     this.io.to(game.id).emit('gameFinished', finalResults);
     this.stopGameLoop(game.id);
+    // Phase 4: generate + persist TSV once, then drop from memory. Game stays in SQLite
+    // for downloads / leaderboards until the 366-day retention sweep.
+    try {
+      const tsv = this.playerManager.generateGameLogsTSV(game);
+      dbFinishGame(game.id, tsv, finalResults);
+    } catch (e) {
+      console.error('[db] finishGame failed:', e);
+    }
+    // Drop in-memory state after a short grace so straggler events (e.g. final TSV download
+    // attempt via in-memory path) succeed. DB still has it after this.
     this.timerManager.setTimer(game.id, 'game_cleanup', () => {
-      console.log(`[PIN ${game.pin}] Cleaning up game resources after 30s delay`);
+      console.log(`[PIN ${game.pin}] Releasing in-memory state (DB record preserved)`);
       this.gameManager.deleteGame(game.id);
-    }, 30000);
+    }, 60_000);
   }
 
   onPlayerAnswered(game: Game): void {

@@ -4,6 +4,7 @@ import next from 'next';
 import { Server as SocketIOServer } from 'socket.io';
 import { GameServer } from './src/lib/game';
 import { SOCKET_PATH } from './src/lib/socket-config';
+import { initDb, closeDb, sweepInflightGamesOnBoot, deleteOldGames, getGameTsv } from './src/lib/db';
 
 const dev = process.env.NODE_ENV !== 'production';
 const hostname = 'localhost';
@@ -27,6 +28,22 @@ const allowedOrigins = (process.env.ALLOWED_ORIGINS
 
 const app = next({ dev, hostname, port });
 const handle = app.getRequestHandler();
+
+// Phase 4: DB init + boot sweep (mark any in-flight game as finished — server crashed mid-game)
+initDb();
+const swept = sweepInflightGamesOnBoot((gameId) => getGameTsv(gameId));
+if (swept > 0) console.log(`[db] Boot sweep: marked ${swept} in-flight game(s) as finished`);
+
+// Retention: delete games finished more than 366 days ago — runs every 24h
+const RETENTION_DAYS = 366;
+setInterval(() => {
+  try {
+    const removed = deleteOldGames(RETENTION_DAYS);
+    if (removed > 0) console.log(`[db] Retention sweep: deleted ${removed} game(s) older than ${RETENTION_DAYS} days`);
+  } catch (e) {
+    console.error('[db] Retention sweep error:', e);
+  }
+}, 24 * 60 * 60 * 1000);
 
 app.prepare().then(() => {
   const httpServer = createServer(async (req, res) => {
@@ -61,6 +78,7 @@ app.prepare().then(() => {
   process.on('SIGTERM', () => {
     console.log('Received SIGTERM, shutting down gracefully...');
     gameServer.shutdown();
+    closeDb();
     httpServer.close(() => {
       console.log('HTTP server closed');
       process.exit(0);
@@ -70,6 +88,7 @@ app.prepare().then(() => {
   process.on('SIGINT', () => {
     console.log('Received SIGINT, shutting down gracefully...');
     gameServer.shutdown();
+    closeDb();
     httpServer.close(() => {
       console.log('HTTP server closed');
       process.exit(0);
