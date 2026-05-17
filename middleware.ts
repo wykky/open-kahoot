@@ -4,7 +4,7 @@ import { NextResponse } from "next/server";
 export default auth((req) => {
   // Protect /host routes — must be signed in
   if (req.nextUrl.pathname.startsWith("/host") && !req.auth) {
-    const signInUrl = new URL("/api/auth/signin", req.url);
+    const signInUrl = new URL("/auth/signin", req.url);
     signInUrl.searchParams.set("callbackUrl", req.nextUrl.pathname);
     return NextResponse.redirect(signInUrl);
   }
