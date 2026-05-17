@@ -19,6 +19,11 @@ function verifyTelegramAuth(
   const hmac = createHmac("sha256", secret)
     .update(dataCheckString)
     .digest("hex");
+  console.error(
+    "[tg-auth] dataCheckString=" + JSON.stringify(dataCheckString) +
+    " computedHmac=" + hmac +
+    " receivedHash=" + hash
+  );
   return hmac === hash;
 }
 
@@ -45,7 +50,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         hash: {},
       },
       async authorize(credentials) {
-        console.error("[tg-auth] authorize called with keys:", credentials ? Object.keys(credentials) : "no-credentials");
+        console.error("[tg-auth] authorize called with keys=" + JSON.stringify(credentials ? Object.keys(credentials) : "no-credentials"));
         if (!credentials) return null;
         const data: Record<string, string> = {};
         for (const [k, v] of Object.entries(credentials)) {
@@ -53,7 +58,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
             data[k] = String(v);
           }
         }
-        console.error("[tg-auth] data keys:", Object.keys(data), "id=", data.id, "hash-prefix=", data.hash?.slice(0, 8));
+        console.error("[tg-auth] data=" + JSON.stringify(data));
         const botToken = process.env.TELEGRAM_BOT_TOKEN;
         if (!botToken) {
           console.error("[tg-auth] FAIL: TELEGRAM_BOT_TOKEN not set");
