@@ -113,8 +113,8 @@ export function validateJoinGamePayload(
   if (trimmed.length === 0 || trimmed.length > LIMITS.PLAYER_NAME_MAX) {
     return `Name must be 1..${LIMITS.PLAYER_NAME_MAX} characters`;
   }
-  // persistentId may be undefined OR (legacy) a function (callback). Anything else string-shaped must be valid.
-  if (persistentId !== undefined && typeof persistentId !== 'function') {
+  // persistentId may be null (fresh join) or a string (reconnect). Anything else is invalid.
+  if (persistentId != null) {
     if (!isStr(persistentId) || persistentId.length > LIMITS.ID_MAX) {
       return 'Invalid persistentId';
     }
