@@ -1,0 +1,166 @@
+{
+  "home": {
+    "title": "Atenu Live",
+    "play": {
+      "title": "ተጫወት",
+      "description": "የጨዋታ ፒን ያስገቡ፣ ጨዋታውን ይቀላቀሉ እና ከሌሎች ተጫዋቾች ጋር ይወዳደሩ።",
+      "button": "ጀምር →"
+    },
+    "host": {
+      "title": "ጨዋታ አስተናግድ",
+      "description": "የራስዎን ጥያቄዎች ይፍጠሩ፣ ተጫዋቾችም በፒን እንዲገቡ ያድርጉ።",
+      "button": "አስተናግድ →"
+    },
+    "footer": {
+      "disclaimer": "ይህ ፕሮጀክት ከ Kahoot! AS ጋር ምንም አይነት ግንኙነት የለውም። Kahoot! የ Kahoot! AS የንግድ ምልክት ነው።",
+      "github": "ምንጭ ኮድ ይመልከቱ"
+    }
+  },
+  "join": {
+    "loading": "በመጫን ላይ...",
+    "gamePin": "የጨዋታ ፒን",
+    "yourName": "ስምዎ",
+    "namePlaceholder": "ስምዎን ያስገቡ...",
+    "generateNickname": "የዘፈቀደ ስም ፍጠር",
+    "joinGame": "ጨዋታውን ተቀላቀል",
+    "error": {
+      "gameNotFound": "ጨዋታ አልተገኘም ወይም ቀድሞ ተጀምሯል። ፒኑን ይፈትሹ።"
+    }
+  },
+  "host": {
+    "settings": {
+      "thinkTime": "የማሰብ ጊዜ",
+      "thinkTimeDescription": "መልሶችን ከመቀበል በፊት ጥያቄን ለማሳየት የሚሰጥ ጊዜ",
+      "answerTime": "የመልስ ጊዜ",
+      "answerTimeDescription": "መልሶችን ለማስገባት የሚፈቀድ ጊዜ",
+      "default": "መደበኛ",
+      "longer": "ረዘም ያለ",
+      "longest": "በጣም ረዥም",
+      "seconds": "ሰከንዶች"
+    },
+    "quizCreation": {
+      "createFirstQuestion": "የመጀመሪያ ጥያቄዎን ይፍጠሩ",
+      "chooseHowToStart": "እንዴት መጀመር እንደሚፈልጉ ይምረጡ:",
+      "createQuestion": "ጥያቄ ይፍጠሩ",
+      "or": "ወይም",
+      "importTSV": "TSV ፋይል ያስገቡ",
+      "askAI": "AI ይጠይቁ",
+      "tsvInfo": "የ TSV ፋይሎች የሚከተሉትን አምዶች ሊኖራቸው ይገባል: question, correct, wrong1, wrong2, wrong3, እና ምርጫ ሆኖ explanation።",
+      "downloadTSV": "TSV አውርድ",
+      "createGame": "ጨዋታ ይፍጠሩ",
+      "question": "ጥያቄ",
+      "shuffleOptions": "ምርጫዎችን አደባልቅ",
+      "questionPlaceholder": "ጥያቄዎን ያስገቡ...",
+      "optionPlaceholder": "ምርጫ {{number}}...",
+      "uploadImage": "ምስል ይስቀሉ",
+      "removeImage": "ምስል አስወግድ",
+      "explanationPlaceholder": "ለመልሱ አማራጭ ማብራሪያ ያስገቡ...",
+      "addQuestion": "ጥያቄ ጨምር",
+      "appendTSV": "TSV ጨምር",
+      "unsavedWarning": "ያልተቀመጡ ጥያቄዎች አሉዎት። መውጣት ይፈልጋሉ?",
+      "noQuestionsToExport": "ለመላክ ምንም ጥያቄዎች የሉም።",
+      "errorImporting": "ፋይል በማስገባት ላይ ስህተት: {{error}}",
+      "errorAppending": "ፋይል በመጨመር ላይ ስህተት: {{error}}",
+      "successGenerated": "{{count}} ጥያቄዎችን በተሳካ ሁኔታ አመነጨ!",
+      "errorGenerating": "ስህተት: {{error}}",
+      "failedToGenerate": "ጥያቄዎችን ማመንጨት አልተቻለም",
+      "defaultTitle": "የጨዋታ ጥያቄ"
+    },
+    "aiModal": {
+      "title": "በ AI የጨዋታ ጥያቄ ማመንጨት",
+      "description": "AI ለእርስዎ የጥያቄ መልሶችን ይፍጠር! ቋንቋ ይምረጡና ርዕስ ያስገቡ።",
+      "accessKey": "የመዳረሻ ቁልፍ",
+      "accessKeyPlaceholder": "የ AI ማመንጫ መዳረሻ ቁልፍ ያስገቡ",
+      "language": "ቋንቋ",
+      "english": "English",
+      "french": "Français",
+      "subject": "ርዕስ",
+      "numberOfQuestions": "የጥያቄዎች ብዛት",
+      "generating": "በማመንጨት ላይ...",
+      "generateQuestions": "ጥያቄዎችን ይፍጠሩ",
+      "warning": "⚠️ በ AI የተፈጠረ ይዘት ስህተት ሊኖረው ይችላል። ከመጠቀምዎ በፊት ሁሉንም ጥያቄዎች ይፈትሹ።",
+      "errorSubject": "ለጥያቄው ርዕስ ያስገቡ።",
+      "errorAccessKey": "የ AI ማመንጫ መዳረሻ ቁልፍ ያስገቡ።"
+    },
+    "lobby": {
+      "players": "ተጫዋቾች",
+      "startGame": "ጨዋታ ጀምር",
+      "waitingForPlayers": "ተጫዋቾችን በመጠባበቅ ላይ...",
+      "websiteUrl": "የድረ-ገጽ URL",
+      "gamePin": "የጨዋታ ፒን"
+    }
+  },
+  "screens": {
+    "playerWaiting": {
+      "title": "መልስዎ ተመዝግቧል!",
+      "description": "መልስዎ ተቀብሏል። ሌሎች ተጫዋቾች እስኪጨርሱ ይጠብቁ።"
+    },
+    "gameFallback": {
+      "title": "አስተናጋጁን በመጠባበቅ ላይ...",
+      "description": "አስተናጋጁ የቀጣዩን ጥያቄ እያዘጋጀ ነው።"
+    },
+    "playerThinking": {
+      "title": "ይዘጋጁ!",
+      "description": "ዋናው ስክሪን ላይ የሚታየውን ጥያቄ ያንብቡ"
+    },
+    "gameWaiting": {
+      "waitingTitle": "ጨዋታ እስኪጀመር በመጠባበቅ ላይ...",
+      "startingTitle": "ጨዋታው ይጀምራል!",
+      "description": "ለጥያቄዎች ይዘጋጁ!"
+    },
+    "gameWaitingForResults": {
+      "hostTitle": "ውጤቶችን በማስላት ላይ...",
+      "playerTitle": "ውጤትዎ እየተዘጋጀ ነው...",
+      "hostDescription": "ለሁሉም ተጫዋቾች ውጤት በማዘጋጀት ላይ",
+      "playerDescription": "ይጠብቁ፣ ውጤትዎ በመሰላት ላይ ነው!"
+    },
+    "gameValidation": {
+      "title": "ከጨዋታ ጋር በመገናኘት ላይ...",
+      "description": "ጨዋታው አሁንም ንቁ መሆኑን እና ግንኙነትዎን በማረጋገጥ ላይ።"
+    },
+    "gameThinkingPhase": {
+      "hostLabel": "ተጫዋቾች ጥያቄውን እያነበቡ ነው",
+      "playerLabel": "ጥያቄውን በትኩረት ያንብቡ"
+    },
+    "answering": {
+      "hostLabel": "ተጫዋቾች መልሳቸውን እየመረጡ ነው",
+      "playerLabel": "መልስዎን ይምረጡ!",
+      "playerTitle": "መልስዎን ይምረጡ:",
+      "hostDescription": "ተጫዋቾች በመሣሪያቸው ላይ መልስ እየመረጡ ነው"
+    },
+    "results": {
+      "loadingTitle": "ውጤትዎ እየተዘጋጀ ነው...",
+      "loadingDescription": "ይጠብቁ፣ ውጤት በመሰላት ላይ!",
+      "correct": "ትክክል!",
+      "incorrect": "ስህተት!",
+      "pointsEarned": "በዚህ ጥያቄ ያገኙት ነጥብ",
+      "totalScore": "ጠቅላላ ውጤት:",
+      "currentPosition": "የአሁን ደረጃ",
+      "pointsBehind": "ነጥብ በኋላ",
+      "inTheLead": "በመሪነት ላይ ነዎት! ይቀጥሉ!",
+      "waitingForHost": "አስተናጋጁ እስኪቀጥል በመጠባበቅ ላይ...",
+      "playersGotItRight": "ከ {{total}} ተጫዋቾች ውስጥ {{correct}} በትክክል መልሰዋል!",
+      "showLeaderboard": "የደረጃ ሰንጠረዥ አሳይ"
+    },
+    "leaderboard": {
+      "title": "የአሁን ደረጃ",
+      "questionProgress": "ጥያቄ {{current}} ከ {{total}} ተጠናቀቀ",
+      "finishGame": "ጨዋታ ጨርስ",
+      "nextQuestion": "ቀጣይ ጥያቄ"
+    },
+    "finalLeaderboard": {
+      "title": "የመጨረሻ ደረጃ",
+      "subtitle": "ጨዋታው አሁን ተጠናቋል!",
+      "downloadLogs": "የጨዋታ ምዝግቦች አውርድ",
+      "backToHome": "ወደ መነሻ ገጽ ተመለስ"
+    },
+    "gameError": {
+      "title": "ጨዋታ አልተገኘም",
+      "goHome": "ወደ መነሻ ገጽ ይሂዱ",
+      "redirecting": "ወደ መነሻ ገጽ በማዞር ላይ...",
+      "gameNotFound": "ጨዋታ አልተገኘም ወይም ከእንግዲህ የለም",
+      "unableToRejoin": "ጨዋታውን እንደገና መቀላቀል አልተቻለም።",
+      "noPlayerData": "ለዚህ ጨዋታ የተጫዋች መረጃ አልተገኘም። እንደገና ይቀላቀሉ።"
+    }
+  }
+}

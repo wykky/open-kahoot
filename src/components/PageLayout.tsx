@@ -1,5 +1,6 @@
 import { gradients } from '@/lib/palette';
 import Link from 'next/link';
+import LanguageSelector from './LanguageSelector';
 
 interface PageLayoutProps {
   children: React.ReactNode;
@@ -10,9 +11,9 @@ interface PageLayoutProps {
   centerVertically?: boolean;
 }
 
-export default function PageLayout({ 
-  children, 
-  gradient, 
+export default function PageLayout({
+  children,
+  gradient,
   maxWidth = '4xl',
   showLogo = true,
   centerVertically = false
@@ -21,7 +22,7 @@ export default function PageLayout({
 
   const maxWidthClasses = {
     'sm': 'max-w-sm',
-    'md': 'max-w-md', 
+    'md': 'max-w-md',
     'lg': 'max-w-lg',
     'xl': 'max-w-xl',
     '2xl': 'max-w-2xl',
@@ -33,13 +34,16 @@ export default function PageLayout({
   const textColor = isPurpleBackground ? 'text-white' : 'text-black';
 
   return (
-    <div className={`min-h-screen ${gradientClasses[gradient]} p-8 ${centerVertically ? 'flex flex-col justify-center' : ''}`}>
+    <div className={`min-h-screen ${gradientClasses[gradient]} p-8 ${centerVertically ? 'flex flex-col justify-center' : ''} relative`}>
+      <div className="absolute top-4 right-4 z-50">
+        <LanguageSelector />
+      </div>
       <div className={`container mx-auto ${maxWidthClasses[maxWidth]}`}>
         {showLogo && (
-          <Link href="/" className={`text-4xl font-title mb-8 text-center ${textColor} block`}>Open Kahoot!</Link>
+          <Link href="/" className={`text-4xl font-title mb-8 text-center ${textColor} block`}>Atenu Live</Link>
         )}
         {children}
       </div>
     </div>
   );
-} 
+}

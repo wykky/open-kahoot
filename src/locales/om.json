@@ -1,0 +1,166 @@
+{
+  "home": {
+    "title": "Atenu Live",
+    "play": {
+      "title": "Taphadhu",
+      "description": "PIN taphaa galchiitii tapha jiru seeni; taphattoota biroo waliin dorgomi.",
+      "button": "Eegali →"
+    },
+    "host": {
+      "title": "Tapha Qopheessi",
+      "description": "Gaaffilee kee uumi; taphattoonni PIN fayyadamuun akka seenan godhi.",
+      "button": "Qopheessi →"
+    },
+    "footer": {
+      "disclaimer": "Pirojektiin kun Kahoot! AS ykn damee isaa kamiyyuu waliin walitti hin dhufu. Kahoot! mallattoo daldalaa Kahoot! AS ti.",
+      "github": "Koodii madda ilaali"
+    }
+  },
+  "join": {
+    "loading": "Fe'amaa jira...",
+    "gamePin": "PIN taphaa",
+    "yourName": "Maqaa kee",
+    "namePlaceholder": "Maqaa kee galchi...",
+    "generateNickname": "Maqaa tasaa uumi",
+    "joinGame": "Tapha seeni",
+    "error": {
+      "gameNotFound": "Taphi hin argamne ykn duraan eegalee jira. PIN ilaaliitii irra deebi'i."
+    }
+  },
+  "host": {
+    "settings": {
+      "thinkTime": "Yeroo Yaaduu",
+      "thinkTimeDescription": "Yeroo gaaffiin akka mul'atu deebii hayyamuu dura",
+      "answerTime": "Yeroo Deebii",
+      "answerTimeDescription": "Yeroo deebii galchuuf hayyamamu",
+      "default": "Idilee",
+      "longer": "Dheeraa",
+      "longest": "Dheeraa Hunda Caalu",
+      "seconds": "sekoondii"
+    },
+    "quizCreation": {
+      "createFirstQuestion": "Gaaffii Jalqabaa Kee Uumi",
+      "chooseHowToStart": "Akkamiin akka jalqabdu filadhu:",
+      "createQuestion": "Gaaffii Uumi",
+      "or": "ykn",
+      "importTSV": "Faayilii TSV Galchi",
+      "askAI": "AI Gaafadhu",
+      "tsvInfo": "Faayiliiwwan TSV koolamiiwwan kana qabaachuu qabu: question, correct, wrong1, wrong2, wrong3, fi yoo barbaachise explanation.",
+      "downloadTSV": "TSV Buusi",
+      "createGame": "Tapha Uumi",
+      "question": "Gaaffii",
+      "shuffleOptions": "Filannoowwan Makksi",
+      "questionPlaceholder": "Gaaffii kee galchi...",
+      "optionPlaceholder": "Filannoo {{number}}...",
+      "uploadImage": "Suuraa Ol Kaa'i",
+      "removeImage": "Suuraa Haqi",
+      "explanationPlaceholder": "Deebii ibsuu yoo barbaadde galchi...",
+      "addQuestion": "Gaaffii Itti Dabali",
+      "appendTSV": "TSV Itti Dabali",
+      "unsavedWarning": "Gaaffilee hin olkaa'amne qabda. Bahuu barbaaddaa?",
+      "noQuestionsToExport": "Gaaffilee ergaman hin jiran.",
+      "errorImporting": "Faayilii galchuu keessatti dogoggorri: {{error}}",
+      "errorAppending": "Faayilii itti dabaluu keessatti dogoggorri: {{error}}",
+      "successGenerated": "Gaaffilee {{count}} milkaa'inaan oomishe!",
+      "errorGenerating": "Dogoggora: {{error}}",
+      "failedToGenerate": "Gaaffilee oomishuun hin milkoofne",
+      "defaultTitle": "Tapha Gaaffii"
+    },
+    "aiModal": {
+      "title": "AI Tapha Gaaffii Oomishuu",
+      "description": "AI gaaffilee tapha siif uumee! Afaan filadhuutii mata duree galchi.",
+      "accessKey": "Furtuu Galmaa",
+      "accessKeyPlaceholder": "Furtuu galmaa AI oomishuu galchi",
+      "language": "Afaan",
+      "english": "English",
+      "french": "Français",
+      "subject": "Mata Duree",
+      "numberOfQuestions": "Baay'ina Gaaffilee",
+      "generating": "Oomishaa jira...",
+      "generateQuestions": "Gaaffilee Oomishi",
+      "warning": "⚠️ Qabiyyeen AI'n oomishame dogoggora qabaachuu danda'a. Itti fayyadamuu dura hunda ilaali.",
+      "errorSubject": "Mata duree tapha galchi.",
+      "errorAccessKey": "Furtuu galmaa AI oomishuu galchi."
+    },
+    "lobby": {
+      "players": "Taphattoota",
+      "startGame": "Tapha Eegali",
+      "waitingForPlayers": "Taphattoota eegaa jira...",
+      "websiteUrl": "URL Marsariitii",
+      "gamePin": "PIN taphaa"
+    }
+  },
+  "screens": {
+    "playerWaiting": {
+      "title": "Deebiin galmeeffame!",
+      "description": "Deebiin kee fudhatame. Taphattoonni biroo akka xumuranii eegi."
+    },
+    "gameFallback": {
+      "title": "Qopheessaa eegaa jira...",
+      "description": "Qopheessaan gaaffii itti aanu qopheessaa jira."
+    },
+    "playerThinking": {
+      "title": "Qopha'i!",
+      "description": "Iskiriinii guddaa irratti gaaffii dubbisi"
+    },
+    "gameWaiting": {
+      "waitingTitle": "Tapha eegalu eegaa jira...",
+      "startingTitle": "Taphi ni eegala!",
+      "description": "Gaaffilee deebisuu qopha'i!"
+    },
+    "gameWaitingForResults": {
+      "hostTitle": "Bu'aalee shallagaa jira...",
+      "playerTitle": "Bu'aaleen kee qopha'aa jiru...",
+      "hostDescription": "Taphattoota hundaaf bu'aa qopheessaa jira",
+      "playerDescription": "Eegi, qabxiin kee shallagaa jira!"
+    },
+    "gameValidation": {
+      "title": "Tapha waliin walitti hidhamaa jira...",
+      "description": "Taphi ammallee dalagaa jiraachuu mirkaneessaa jirra."
+    },
+    "gameThinkingPhase": {
+      "hostLabel": "Taphattoonni gaaffii dubbisaa jiru",
+      "playerLabel": "Gaaffii xiyyeeffannoodhaan dubbisi"
+    },
+    "answering": {
+      "hostLabel": "Taphattoonni deebii filachaa jiru",
+      "playerLabel": "Deebii kee filadhu!",
+      "playerTitle": "Deebii kee filadhu:",
+      "hostDescription": "Taphattoonni meeshaalee isaanii irratti deebii filachaa jiru"
+    },
+    "results": {
+      "loadingTitle": "Bu'aaleen kee qopha'aa jiru...",
+      "loadingDescription": "Eegi, qabxiilee shallagaa jirra!",
+      "correct": "Sirrii!",
+      "incorrect": "Dogoggora!",
+      "pointsEarned": "Qabxii gaaffii kana irraa argatte",
+      "totalScore": "Qabxii waliigalaa:",
+      "currentPosition": "Sadarkaa ammaa",
+      "pointsBehind": "qabxii duubatti",
+      "inTheLead": "Dursaa jirta! Itti fufi!",
+      "waitingForHost": "Qopheessaa akka itti fufu eegaa jira...",
+      "playersGotItRight": "Taphattoota {{total}} keessaa {{correct}} sirriitti deebisan!",
+      "showLeaderboard": "Tarree Sadarkaa Argisiisi"
+    },
+    "leaderboard": {
+      "title": "Tarree Sadarkaa Ammaa",
+      "questionProgress": "Gaaffii {{current}} {{total}} keessaa xumurame",
+      "finishGame": "Tapha Xumuri",
+      "nextQuestion": "Gaaffii Itti Aanu"
+    },
+    "finalLeaderboard": {
+      "title": "Tarree Sadarkaa Dhumaa",
+      "subtitle": "Taphi xumurameera!",
+      "downloadLogs": "Galmee Taphaa Buusi",
+      "backToHome": "Gara fuula jalqabaa deebi'i"
+    },
+    "gameError": {
+      "title": "Taphi hin argamne",
+      "goHome": "Gara fuula jalqabaa deemi",
+      "redirecting": "Gara fuula jalqabaa geessaa jira...",
+      "gameNotFound": "Taphi hin argamne ykn kana booda hin jiru",
+      "unableToRejoin": "Tapha irra deebi'anii seenuun hin danda'amne.",
+      "noPlayerData": "Tapha kanaaf odeeffannoon taphataa hin argamne. Irra deebi'ii seeni."
+    }
+  }
+}
