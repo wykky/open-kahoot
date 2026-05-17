@@ -8,7 +8,7 @@ import TelegramLoginButton from '@/components/TelegramLoginButton';
 
 function SignInInner() {
   const searchParams = useSearchParams();
-  const callbackUrl = searchParams.get('callbackUrl') || '/host';
+  const callbackUrl = searchParams?.get('callbackUrl') || '/host';
 
   return (
     <PageLayout gradient="home" maxWidth="md" showLogo={true} centerVertically>
