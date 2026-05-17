@@ -77,8 +77,8 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
   callbacks: {
     async jwt({ token, user }) {
       if (user) {
-        const u = user as { id?: string };
-        const t = token as Record<string, unknown>;
+        const u = user as unknown as { id?: string };
+        const t = token as unknown as Record<string, unknown>;
         if (u.id) {
           t.id = u.id;
           t.provider = u.id.startsWith("tg:") ? "telegram" : "google";
@@ -88,8 +88,8 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     },
     async session({ session, token }) {
       if (token && session.user) {
-        const t = token as Record<string, unknown>;
-        const su = session.user as Record<string, unknown>;
+        const t = token as unknown as Record<string, unknown>;
+        const su = session.user as unknown as Record<string, unknown>;
         if (t.id) su.id = t.id;
         if (t.provider) su.provider = t.provider;
       }
