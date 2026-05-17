@@ -1,6 +1,9 @@
 import { v4 as uuidv4 } from 'uuid';
+import { randomInt } from 'crypto';
 import type { Game, Question, GameSettings, GamePhase } from '@/types/game';
 import { gameConfig } from '@/lib/config';
+
+const MAX_PIN_GENERATION_ATTEMPTS = 1000;
 
 export class GameManager {
   private games: Map<string, Game> = new Map();
@@ -10,7 +13,7 @@ export class GameManager {
     const gameId = uuidv4();
     const hostId = uuidv4(); // Generate persistent ID for host
     const pin = this.generatePin();
-    
+
     const game: Game = {
       id: gameId,
       pin,
@@ -35,9 +38,7 @@ export class GameManager {
 
     this.games.set(gameId, game);
     this.gamesByPin.set(pin, gameId);
-    
-    // Removed console.log
-    
+
     return game;
   }
 
@@ -47,12 +48,7 @@ export class GameManager {
 
   getGameByPin(pin: string): Game | undefined {
     const gameId = this.gamesByPin.get(pin);
-    const game = gameId ? this.games.get(gameId) : undefined;
-    // Removed console.log
-    if (this.games.size > 0) {
-      // Removed console.log
-    }
-    return game;
+    return gameId ? this.games.get(gameId) : undefined;
   }
 
   deleteGame(gameId: string): void {
@@ -107,16 +103,23 @@ export class GameManager {
     return game.currentQuestionIndex >= game.questions.length - 1;
   }
 
+  /**
+   * Generate a unique PIN using a cryptographically secure RNG.
+   * Bounded retry: throws if it cannot find a free PIN after MAX_PIN_GENERATION_ATTEMPTS.
+   * Practically only fires when the PIN namespace is near saturation (10^pinLength games).
+   */
   private generatePin(): string {
     const pinLength = gameConfig.pinLength;
     const min = Math.pow(10, pinLength - 1);
-    const max = Math.pow(10, pinLength) - 1;
-    const pin = Math.floor(min + Math.random() * (max - min + 1)).toString();
-    // Ensure pin is unique
-    if (this.gamesByPin.has(pin)) {
-      return this.generatePin();
+    const max = Math.pow(10, pinLength); // randomInt upper bound is exclusive
+    for (let attempt = 0; attempt < MAX_PIN_GENERATION_ATTEMPTS; attempt++) {
+      const pin = randomInt(min, max).toString();
+      if (!this.gamesByPin.has(pin)) return pin;
     }
-    return pin;
+    throw new Error(
+      `Could not allocate a free PIN after ${MAX_PIN_GENERATION_ATTEMPTS} attempts. ` +
+      `Active games: ${this.gamesByPin.size}. Consider increasing pinLength.`
+    );
   }
 
   // Debug methods
@@ -127,4 +130,4 @@ export class GameManager {
   getGameCount(): number {
     return this.games.size;
   }
-} 
+}

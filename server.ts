@@ -9,6 +9,22 @@ const dev = process.env.NODE_ENV !== 'production';
 const hostname = 'localhost';
 const port = parseInt(process.env.PORT || '3000');
 
+// CORS allow-list. In dev we accept localhost; in prod we require explicit ALLOWED_ORIGINS env var.
+// Default production set: live.atenu.org + Atenu Live tunnel (Cloudflare).
+const defaultAllowed = dev
+  ? [
+      'http://localhost:3000',
+      'http://127.0.0.1:3000',
+    ]
+  : [
+      'https://live.atenu.org',
+    ];
+
+const allowedOrigins = (process.env.ALLOWED_ORIGINS
+  ? process.env.ALLOWED_ORIGINS.split(',').map((s) => s.trim()).filter(Boolean)
+  : defaultAllowed
+);
+
 const app = next({ dev, hostname, port });
 const handle = app.getRequestHandler();
 
@@ -24,21 +40,23 @@ app.prepare().then(() => {
     }
   });
 
-  // Allow larger payloads (e.g. base64-encoded images) by raising the default 1 MB limit
   const io = new SocketIOServer(httpServer, {
     path: SOCKET_PATH,
     addTrailingSlash: false,
-    // 100 MB – adjust as needed but keep a sensible upper bound
-    maxHttpBufferSize: 1e8,
+    // 512 KB cap — generous for a ~100-question quiz import, blocks 100MB DoS payloads
+    maxHttpBufferSize: 512 * 1024,
     cors: {
-      origin: "*",
-      methods: ["GET", "POST"]
-    }
+      origin: allowedOrigins,
+      methods: ['GET', 'POST'],
+      credentials: true,
+    },
   });
+
+  console.log('[server] Socket.io CORS allow-list:', allowedOrigins);
 
   // Initialize the modular GameServer
   const gameServer = new GameServer(io);
-  
+
   // Graceful shutdown handling
   process.on('SIGTERM', () => {
     console.log('Received SIGTERM, shutting down gracefully...');
@@ -65,6 +83,6 @@ app.prepare().then(() => {
     })
     .listen(port, () => {
       console.log(`Ready on http://${hostname}:${port}`);
-      console.log(`Game server initialized with modular architecture`);
+      console.log('Game server initialized with modular architecture');
     });
-}); 
+});
