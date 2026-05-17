@@ -24,6 +24,7 @@ export interface AnswerRecord {
 export interface GameSettings {
   thinkTime: number; // Time to show question before allowing answers (in seconds)
   answerTime: number; // Time allowed to answer (in seconds)
+  showQuestionOnPlayers?: boolean; // If true, players see question + answers on their phones
 }
 
 export type GamePhase = 'waiting' | 'preparation' | 'thinking' | 'answering' | 'results' | 'leaderboard' | 'finished';

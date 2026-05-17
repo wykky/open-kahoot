@@ -18,17 +18,18 @@ interface GameAnsweringPhaseScreenProps {
   hasAnswered: boolean;
 }
 
-export default function GameAnsweringPhaseScreen({ 
-  currentQuestion, 
-  timeLeft, 
-  game, 
-  isHost, 
-  isPlayer, 
-  onSubmitAnswer, 
+export default function GameAnsweringPhaseScreen({
+  currentQuestion,
+  timeLeft,
+  game,
+  isHost,
+  isPlayer,
+  onSubmitAnswer,
   hasAnswered
 }: GameAnsweringPhaseScreenProps) {
   const { t } = useTranslation();
-  
+  const showOnPlayers = game?.settings.showQuestionOnPlayers ?? true;
+
   // If player has answered, show full-screen waiting screen (no timer or container)
   if (isPlayer && hasAnswered) {
     return <PlayerWaitingScreen />;
@@ -46,7 +47,7 @@ export default function GameAnsweringPhaseScreen({
             {isHost ? t('screens.answering.hostLabel') : t('screens.answering.playerLabel')}
           </p>
           <div className="w-full bg-gray-200 rounded-full h-3 mt-4">
-            <div 
+            <div
               className={`${accent.bg} h-3 rounded-full transition-all duration-1000 ease-linear`}
               style={{ width: `${(timeLeft / (game?.settings.answerTime || 30)) * 100}%` }}
             />
@@ -55,20 +56,23 @@ export default function GameAnsweringPhaseScreen({
 
         {/* Host Screen - Show question and full answer choices */}
         {isHost && (
-          <HostAnsweringScreen 
+          <HostAnsweringScreen
             currentQuestion={currentQuestion}
             timeLeft={timeLeft}
             answerTime={game?.settings.answerTime || 30}
           />
         )}
 
-        {/* Player Device - Show answer choices */}
+        {/* Player Device - Show answer choices (and optionally question) */}
         {isPlayer && !hasAnswered && (
           <div className="flex-1 flex">
-            <PlayerAnsweringScreen onSubmitAnswer={onSubmitAnswer} />
+            <PlayerAnsweringScreen
+              onSubmitAnswer={onSubmitAnswer}
+              question={showOnPlayers ? currentQuestion : undefined}
+            />
           </div>
         )}
       </div>
     </div>
   );
-} 
+}

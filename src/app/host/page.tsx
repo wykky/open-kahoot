@@ -23,7 +23,8 @@ export default function HostPage() {
   const [questions, setQuestions] = useState<Question[]>([]);
   const [gameSettings, setGameSettings] = useState<GameSettings>({
     thinkTime: 5,
-    answerTime: 20
+    answerTime: 20,
+    showQuestionOnPlayers: true
   });
   const [game, setGame] = useState<Game | null>(null);
 

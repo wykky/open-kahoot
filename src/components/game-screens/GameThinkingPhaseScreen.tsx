@@ -15,15 +15,16 @@ interface GameThinkingPhaseScreenProps {
   isPlayer: boolean;
 }
 
-export default function GameThinkingPhaseScreen({ 
-  currentQuestion, 
-  timeLeft, 
-  game, 
-  isHost, 
-  isPlayer 
+export default function GameThinkingPhaseScreen({
+  currentQuestion,
+  timeLeft,
+  game,
+  isHost,
+  isPlayer
 }: GameThinkingPhaseScreenProps) {
   const { t } = useTranslation();
-  
+  const showOnPlayers = game?.settings.showQuestionOnPlayers ?? true;
+
   return (
     <PageLayout gradient="thinking" maxWidth="4xl" showLogo={false}>
       <div className="flex flex-col min-h-[calc(100vh-4rem)]">
@@ -39,13 +40,15 @@ export default function GameThinkingPhaseScreen({
           <HostThinkingScreen currentQuestion={currentQuestion} />
         )}
 
-        {/* Player Device - Waiting */}
+        {/* Player Device - Waiting (or show question if enabled) */}
         {isPlayer && (
           <div className="flex-1 flex">
-            <PlayerThinkingScreen />
+            <PlayerThinkingScreen
+              question={showOnPlayers ? currentQuestion : undefined}
+            />
           </div>
         )}
       </div>
     </PageLayout>
   );
-} 
+}
