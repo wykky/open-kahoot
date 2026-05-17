@@ -100,17 +100,50 @@ export interface ServerToClientEvents {
   playerAnswered: (playerId: string) => void;
   gameLogs: (tsvData: string, filename: string) => void;
   gameUpdated: (game: Game) => void;
+  // Phase 2: emitted to late joiners during a live question (they shouldn't see the question)
+  waitForNextQuestion: () => void;
+  // Phase 2: emitted to all clients when the host disconnects (grace window started)
+  hostReconnecting: (graceMs: number) => void;
+  hostReconnected: () => void;
+}
+
+// Auth for validateGame — caller may identify as host (with hostToken) or returning player (with playerId + playerToken).
+export interface ValidateGameAuth {
+  hostToken?: string;
+  playerId?: string;
+  playerToken?: string;
 }
 
 export interface ClientToServerEvents {
-  createGame: (title: string, questions: Question[], settings: GameSettings, callback: (game: Game) => void) => void;
-  joinGame: (pin: string, playerName: string, persistentId?: string, callback?: (success: boolean, game?: Game, playerId?: string) => void) => void;
-  validateGame: (gameId: string, callback: (valid: boolean, game?: Game) => void) => void;
-  startGame: (gameId: string) => void;
-  submitAnswer: (gameId: string, questionId: string, answerIndex: number, persistentId?: string) => void;
-  nextQuestion: (gameId: string) => void;
-  showLeaderboard: (gameId: string) => void;
-  endGame: (gameId: string) => void;
-  downloadGameLogs: (gameId: string) => void;
-  toggleDyslexiaSupport: (gameId: string, playerId: string) => void;
+  createGame: (
+    title: string,
+    questions: Question[],
+    settings: GameSettings,
+    callback: (game: Game, hostToken: string) => void
+  ) => void;
+  joinGame: (
+    pin: string,
+    playerName: string,
+    persistentId: string | null,
+    playerToken: string | null,
+    callback: (success: boolean, game?: Game, playerId?: string, playerToken?: string) => void
+  ) => void;
+  validateGame: (
+    gameId: string,
+    auth: ValidateGameAuth,
+    callback: (valid: boolean, game?: Game) => void
+  ) => void;
+  startGame: (gameId: string, hostToken: string) => void;
+  submitAnswer: (
+    gameId: string,
+    questionId: string,
+    answerIndex: number,
+    persistentId: string,
+    playerToken: string
+  ) => void;
+  nextQuestion: (gameId: string, hostToken: string) => void;
+  showLeaderboard: (gameId: string, hostToken: string) => void;
+  endGame: (gameId: string, hostToken: string) => void;
+  downloadGameLogs: (gameId: string, hostToken: string) => void;
+  toggleDyslexiaSupport: (gameId: string, playerId: string, hostToken: string) => void;
 }

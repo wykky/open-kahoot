@@ -18,45 +18,42 @@ import type { Question, Game, Player, GameSettings } from '@/types/game';
 import HostGameLobbyScreen from '@/components/host-setup/HostGameLobbyScreen';
 import HostQuizCreationScreen from '@/components/host-setup/HostQuizCreationScreen';
 
+// Phase 2: persist the hostToken so it survives navigation from /host -> /game/[id]
+const HOST_TOKEN_KEY = (gameId: string) => `host_token_${gameId}`;
+
 export default function HostPage() {
   const { t } = useTranslation();
   const [questions, setQuestions] = useState<Question[]>([]);
   const [gameSettings, setGameSettings] = useState<GameSettings>({
     thinkTime: 5,
     answerTime: 20,
-    showQuestionOnPlayers: true
+    showQuestionOnPlayers: true,
   });
   const [game, setGame] = useState<Game | null>(null);
+  const [hostToken, setHostToken] = useState<string | null>(null);
 
   const router = useRouter();
-  
-  // Enable beforeunload when there are questions to prevent accidental data loss
+
   const { clearNavigationFlag } = useBeforeUnload({
     enabled: questions.length > 0,
-    message: t('host.quizCreation.unsavedWarning')
+    message: t('host.quizCreation.unsavedWarning'),
   });
 
   useEffect(() => {
     const socket = getSocket();
-    
     socket.on('playerJoined', (player: Player) => {
-      setGame(prev => prev ? {
-        ...prev,
-        players: [...prev.players.filter(p => p.id !== player.id), player]
-      } : null);
+      setGame((prev) =>
+        prev
+          ? { ...prev, players: [...prev.players.filter((p) => p.id !== player.id), player] }
+          : null
+      );
     });
-
     socket.on('playerLeft', (playerId: string) => {
-      setGame(prev => prev ? {
-        ...prev,
-        players: prev.players.filter(p => p.id !== playerId)
-      } : null);
+      setGame((prev) =>
+        prev ? { ...prev, players: prev.players.filter((p) => p.id !== playerId) } : null
+      );
     });
-
-    socket.on('gameUpdated', (updatedGame: Game) => {
-      setGame(updatedGame);
-    });
-
+    socket.on('gameUpdated', (updatedGame: Game) => setGame(updatedGame));
     return () => {
       socket.off('playerJoined');
       socket.off('playerLeft');
@@ -74,44 +71,28 @@ export default function HostPage() {
   };
 
   const parseTsvFile = async (file: File): Promise<Question[]> => {
-    // Read file as ArrayBuffer to handle encoding properly
     const arrayBuffer = await file.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
-    
-    // Detect encoding
     const detected = jschardet.detect(buffer);
     const encoding = detected.encoding || 'utf-8';
-    
-    // Removed console.log
-    
-    // Convert to UTF-8 text
     const text = iconv.decode(buffer, encoding);
-    
     return new Promise((resolve, reject) => {
       Papa.parse(text, {
         header: true,
         delimiter: '\t',
         skipEmptyLines: true,
-        transformHeader: (header: string) => header.trim().toLowerCase(),
+        transformHeader: (h: string) => h.trim().toLowerCase(),
         complete: (results) => {
           try {
             const data = results.data as Record<string, string>[];
-            
-            if (data.length === 0) {
-              throw new Error('File must contain at least one data row');
-            }
-
+            if (data.length === 0) throw new Error('File must contain at least one data row');
             const requiredColumns = ['question', 'correct', 'wrong1', 'wrong2', 'wrong3'];
             const headers = Object.keys(data[0] || {});
-            
-            // Check if all required columns exist
-            const missingColumns = requiredColumns.filter(col => !headers.includes(col));
+            const missingColumns = requiredColumns.filter((col) => !headers.includes(col));
             if (missingColumns.length > 0) {
               throw new Error(`Missing required columns: ${missingColumns.join(', ')}`);
             }
-
             const parsedQuestions: Question[] = [];
-
             for (const row of data) {
               const questionText = row.question?.trim();
               const correctAnswer = row.correct?.trim();
@@ -120,38 +101,32 @@ export default function HostPage() {
               const wrong3 = row.wrong3?.trim();
               const explanation = row.explanation?.trim();
               const image = row.image?.trim();
-
-              if (!questionText || !correctAnswer || !wrong1 || !wrong2 || !wrong3) {
-                continue; // Skip rows with empty required fields
-              }
-
-              // Create answer array and shuffle
+              if (!questionText || !correctAnswer || !wrong1 || !wrong2 || !wrong3) continue;
               const answers = [correctAnswer, wrong1, wrong2, wrong3];
               const shuffledAnswers = shuffleArray(answers);
               const correctIndex = shuffledAnswers.indexOf(correctAnswer);
-
               parsedQuestions.push({
                 id: uuidv4(),
                 question: questionText,
                 options: shuffledAnswers,
                 correctAnswer: correctIndex,
-                timeLimit: 30, // Default time limit
+                timeLimit: 30,
                 explanation: explanation || undefined,
-                image: image || undefined
+                image: image || undefined,
               });
             }
-
             resolve(parsedQuestions);
           } catch (error) {
             reject(error);
           }
         },
         error: (error: unknown) => {
-          const errorMessage = error && typeof error === 'object' && 'message' in error 
-            ? String(error.message) 
-            : 'Unknown parsing error';
+          const errorMessage =
+            error && typeof error === 'object' && 'message' in error
+              ? String(error.message)
+              : 'Unknown parsing error';
           reject(new Error(`Failed to parse TSV file: ${errorMessage}`));
-        }
+        },
       });
     });
   };
@@ -159,19 +134,17 @@ export default function HostPage() {
   const handleFileImport = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
-
     try {
       const importedQuestions = await parseTsvFile(file);
       setQuestions(importedQuestions);
-      
-      // Reset file input
       event.target.value = '';
-      
-      // Show success message (you could add a toast notification here)
-      // Removed console.log
     } catch (error) {
       console.error('Import error:', error);
-      alert(t('host.quizCreation.errorImporting', { error: error instanceof Error ? error.message : 'Unknown error' }));
+      alert(
+        t('host.quizCreation.errorImporting', {
+          error: error instanceof Error ? error.message : 'Unknown error',
+        })
+      );
       event.target.value = '';
     }
   };
@@ -179,23 +152,19 @@ export default function HostPage() {
   const handleAppendTSV = async (index: number, event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
-
     try {
       const importedQuestions = await parseTsvFile(file);
-      
-      // Insert the imported questions at the specified index
       const newQuestions = [...questions];
       newQuestions.splice(index, 0, ...importedQuestions);
       setQuestions(newQuestions);
-      
-      // Reset file input
       event.target.value = '';
-      
-      // Show success message
-      // Removed console.log
     } catch (error) {
       console.error('Append error:', error);
-      alert(t('host.quizCreation.errorAppending', { error: error instanceof Error ? error.message : 'Unknown error' }));
+      alert(
+        t('host.quizCreation.errorAppending', {
+          error: error instanceof Error ? error.message : 'Unknown error',
+        })
+      );
       event.target.value = '';
     }
   };
@@ -206,16 +175,13 @@ export default function HostPage() {
       question: '',
       options: ['', '', '', ''],
       correctAnswer: 0,
-      timeLimit: 30
+      timeLimit: 30,
     };
-    
     if (index !== undefined) {
-      // Insert at specific position
       const newQuestions = [...questions];
       newQuestions.splice(index, 0, newQuestion);
       setQuestions(newQuestions);
     } else {
-      // Add at the end (fallback)
       setQuestions([...questions, newQuestion]);
     }
   };
@@ -239,73 +205,65 @@ export default function HostPage() {
   const moveQuestion = (index: number, direction: 'up' | 'down') => {
     const newQuestions = [...questions];
     const targetIndex = direction === 'up' ? index - 1 : index + 1;
-    
     if (targetIndex < 0 || targetIndex >= newQuestions.length) return;
-    
-    // Swap the questions
     [newQuestions[index], newQuestions[targetIndex]] = [newQuestions[targetIndex], newQuestions[index]];
     setQuestions(newQuestions);
   };
 
   const createGame = () => {
     if (questions.length === 0) return;
-    
     const socket = getSocket();
     const title = t('host.quizCreation.defaultTitle');
-    socket.emit('createGame', title, questions, gameSettings, (createdGame: Game) => {
+    socket.emit('createGame', title, questions, gameSettings, (createdGame: Game, token: string) => {
       setGame(createdGame);
-      clearNavigationFlag(); // Clear flag since game is created and questions are saved
+      setHostToken(token);
+      try {
+        sessionStorage.setItem(HOST_TOKEN_KEY(createdGame.id), token);
+      } catch {}
+      clearNavigationFlag();
     });
   };
 
   const startGame = () => {
-    if (!game) return;
-    
+    if (!game || !hostToken) return;
     const socket = getSocket();
-    socket.emit('startGame', game.id);
-    clearNavigationFlag(); // Clear flag since this is intentional navigation
+    socket.emit('startGame', game.id, hostToken);
+    clearNavigationFlag();
     router.push(`/game/${game.id}?host=true`);
   };
 
   const toggleDyslexiaSupport = (playerId: string) => {
-    if (!game) return;
-    
+    if (!game || !hostToken) return;
     const socket = getSocket();
-    socket.emit('toggleDyslexiaSupport', game.id, playerId);
+    socket.emit('toggleDyslexiaSupport', game.id, playerId, hostToken);
   };
 
-  const getJoinUrl = () => {
-    if (!game) return '';
-    return `${appConfig.url}/join?pin=${game.pin}`;
-  };
+  const getJoinUrl = () => (game ? `${appConfig.url}/join?pin=${game.pin}` : '');
 
   const downloadTSV = () => {
     if (questions.length === 0) {
       alert(t('host.quizCreation.noQuestionsToExport'));
       return;
     }
-
-    // Create TSV content
-    const tsvContent = Papa.unparse({
-      fields: ['question', 'correct', 'wrong1', 'wrong2', 'wrong3', 'explanation', 'image'],
-      data: questions.map(q => {
-        const wrongOptions = q.options.filter((_, i) => i !== q.correctAnswer);
-        return {
-          question: q.question,
-          correct: q.options[q.correctAnswer],
-          wrong1: wrongOptions[0] || '',
-          wrong2: wrongOptions[1] || '',
-          wrong3: wrongOptions[2] || '',
-          explanation: q.explanation || '',
-          image: q.image || ''
-        };
-      })
-    }, {
-      delimiter: '\t'
-    });
-
-    // Create a blob and download link
-    const blob = new Blob([`\ufeff${tsvContent}`], { type: 'text/tab-separated-values;charset=utf-8;' });
+    const tsvContent = Papa.unparse(
+      {
+        fields: ['question', 'correct', 'wrong1', 'wrong2', 'wrong3', 'explanation', 'image'],
+        data: questions.map((q) => {
+          const wrongOptions = q.options.filter((_, i) => i !== q.correctAnswer);
+          return {
+            question: q.question,
+            correct: q.options[q.correctAnswer],
+            wrong1: wrongOptions[0] || '',
+            wrong2: wrongOptions[1] || '',
+            wrong3: wrongOptions[2] || '',
+            explanation: q.explanation || '',
+            image: q.image || '',
+          };
+        }),
+      },
+      { delimiter: '\t' }
+    );
+    const blob = new Blob([`﻿${tsvContent}`], { type: 'text/tab-separated-values;charset=utf-8;' });
     const link = document.createElement('a');
     link.href = URL.createObjectURL(blob);
     const now = new Date();
@@ -316,66 +274,51 @@ export default function HostPage() {
     document.body.removeChild(link);
   };
 
-  const handleGenerateAIQuestions = async (subject: string, language: 'english' | 'french', accessKey: string, questionCount: number = 5) => {
+  const handleGenerateAIQuestions = async (
+    subject: string,
+    language: 'english' | 'french',
+    accessKey: string,
+    questionCount: number = 5
+  ) => {
     try {
-      // Call the API endpoint
       const response = await fetch('/api/generate-questions', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ subject, language, accessKey, questionCount }),
       });
-
       const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || t('host.quizCreation.failedToGenerate'));
-      }
-
-      if (!data.success || !data.questions) {
-        throw new Error(t('host.quizCreation.failedToGenerate'));
-      }
-
-      // Convert AI response to Question objects
+      if (!response.ok) throw new Error(data.error || t('host.quizCreation.failedToGenerate'));
+      if (!data.success || !data.questions) throw new Error(t('host.quizCreation.failedToGenerate'));
       const newQuestions: Question[] = data.questions.map((q: {
-        question: string;
-        correct: string;
-        wrong1: string;
-        wrong2: string;
-        wrong3: string;
-        explanation?: string;
+        question: string; correct: string; wrong1: string; wrong2: string; wrong3: string; explanation?: string;
       }) => {
-        // Create answer array and shuffle
         const answers = [q.correct, q.wrong1, q.wrong2, q.wrong3];
         const shuffledAnswers = shuffleArray(answers);
         const correctIndex = shuffledAnswers.indexOf(q.correct);
-
         return {
           id: uuidv4(),
           question: q.question,
           options: shuffledAnswers,
           correctAnswer: correctIndex,
           timeLimit: 30,
-          explanation: q.explanation || undefined
+          explanation: q.explanation || undefined,
         };
       });
-
-      // Append the new questions to existing ones
       setQuestions([...questions, ...newQuestions]);
-
-      // Show success message
       alert(t('host.quizCreation.successGenerated', { count: newQuestions.length }));
-      
     } catch (error) {
       console.error('Error generating questions:', error);
-      alert(t('host.quizCreation.errorGenerating', { error: error instanceof Error ? error.message : t('host.quizCreation.failedToGenerate') }));
+      alert(
+        t('host.quizCreation.errorGenerating', {
+          error: error instanceof Error ? error.message : t('host.quizCreation.failedToGenerate'),
+        })
+      );
     }
   };
 
   if (game) {
     return (
-      <HostGameLobbyScreen 
+      <HostGameLobbyScreen
         game={game}
         joinUrl={getJoinUrl()}
         onStartGame={startGame}
@@ -401,4 +344,4 @@ export default function HostPage() {
       onGenerateAIQuestions={handleGenerateAIQuestions}
     />
   );
-} 
+}

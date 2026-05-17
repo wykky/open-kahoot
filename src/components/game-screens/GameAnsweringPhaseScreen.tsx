@@ -1,12 +1,39 @@
 'use client';
 
 import { Clock } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { getGradient, accent } from '@/lib/palette';
 import HostAnsweringScreen from '@/components/host-screens/HostAnsweringScreen';
 import PlayerAnsweringScreen from '@/components/player-screens/PlayerAnsweringScreen';
 import PlayerWaitingScreen from '@/components/player-screens/PlayerWaitingScreen';
 import type { Question, Game } from '@/types/game';
+
+/**
+ * Smooth single-transition timer bar.
+ * Starts at 100% on mount and animates linearly to 0% over `totalSeconds`.
+ * No tick-based jumping — the bar visibly drains to empty before the next phase renders.
+ */
+function SmoothTimerBar({ totalSeconds, resetKey }: { totalSeconds: number; resetKey: string | number }) {
+  const [width, setWidth] = useState('100%');
+  const raf = useRef<number | null>(null);
+  useEffect(() => {
+    setWidth('100%');
+    if (raf.current) cancelAnimationFrame(raf.current);
+    raf.current = requestAnimationFrame(() => {
+      raf.current = requestAnimationFrame(() => setWidth('0%'));
+    });
+    return () => { if (raf.current) cancelAnimationFrame(raf.current); };
+  }, [resetKey, totalSeconds]);
+  return (
+    <div className="w-full bg-gray-200 rounded-full h-3 mt-4 overflow-hidden">
+      <div
+        className={`${accent.bg} h-3 rounded-full`}
+        style={{ width, transition: `width ${totalSeconds}s linear` }}
+      />
+    </div>
+  );
+}
 
 interface GameAnsweringPhaseScreenProps {
   currentQuestion: Question;
@@ -46,12 +73,12 @@ export default function GameAnsweringPhaseScreen({
           <p className="text-gray-600 text-lg">
             {isHost ? t('screens.answering.hostLabel') : t('screens.answering.playerLabel')}
           </p>
-          <div className="w-full bg-gray-200 rounded-full h-3 mt-4">
-            <div
-              className={`${accent.bg} h-3 rounded-full transition-all duration-1000 ease-linear`}
-              style={{ width: `${(timeLeft / (game?.settings.answerTime || 30)) * 100}%` }}
-            />
-          </div>
+          <SmoothTimerBar
+            totalSeconds={game?.settings.answerTime || 30}
+            resetKey={currentQuestion.id}
+          />
+          {/* timeLeft preserved for accessibility */}
+          <span className="sr-only">{timeLeft} seconds remaining</span>
         </div>
 
         {/* Host Screen - Show question and full answer choices */}

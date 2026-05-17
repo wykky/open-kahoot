@@ -17,7 +17,10 @@ import GameAnsweringPhaseScreen from '@/components/game-screens/GameAnsweringPha
 import GameResultsPhaseScreen from '@/components/game-screens/GameResultsPhaseScreen';
 import GameFallbackScreen from '@/components/game-screens/GameFallbackScreen';
 
-// Game state management
+const HOST_TOKEN_KEY = (gameId: string) => `host_token_${gameId}`;
+const PLAYER_ID_KEY = (pin: string) => `player_id_${pin}`;
+const PLAYER_TOKEN_KEY = (pin: string) => `player_token_${pin}`;
+
 interface GameState {
   game: Game | null;
   currentQuestion: Question | null;
@@ -32,6 +35,7 @@ interface GameState {
   gameStatus: GamePhase | 'waiting-results';
   gameError: string | null;
   isValidating: boolean;
+  hostReconnecting: boolean;
 }
 
 type GameAction =
@@ -47,31 +51,19 @@ type GameAction =
   | { type: 'SHOW_LEADERBOARD'; payload: { leaderboard: Player[]; game: Game } }
   | { type: 'GAME_FINISHED'; payload: Player[] }
   | { type: 'TICK_TIMER' }
-  | { type: 'GAME_STARTED'; payload: Game };
+  | { type: 'GAME_STARTED'; payload: Game }
+  | { type: 'HOST_RECONNECTING'; payload: boolean };
 
 function gameReducer(state: GameState, action: GameAction): GameState {
   switch (action.type) {
     case 'SET_VALIDATING':
       return { ...state, isValidating: action.payload };
-      
     case 'SET_GAME_ERROR':
       return { ...state, gameError: action.payload, isValidating: false };
-      
     case 'SET_GAME_DATA':
-      return { 
-        ...state, 
-        game: action.payload.game, 
-        gameStatus: action.payload.status, 
-        isValidating: false 
-      };
-      
+      return { ...state, game: action.payload.game, gameStatus: action.payload.status, isValidating: false };
     case 'GAME_STARTED':
-      return { 
-        ...state, 
-        game: action.payload, 
-        gameStatus: 'preparation'
-      };
-      
+      return { ...state, game: action.payload, gameStatus: 'preparation' };
     case 'START_THINKING_PHASE':
       return {
         ...state,
@@ -82,65 +74,31 @@ function gameReducer(state: GameState, action: GameAction): GameState {
         hasAnswered: false,
         questionStats: null,
         personalResult: null,
-        gameStatus: 'thinking'
+        gameStatus: 'thinking',
       };
-      
     case 'START_ANSWERING_PHASE':
-      return {
-        ...state,
-        timeLeft: action.payload.answerTime,
-        phase: 'answering',
-        gameStatus: 'answering'
-      };
-      
+      return { ...state, timeLeft: action.payload.answerTime, phase: 'answering', gameStatus: 'answering' };
     case 'SUBMIT_ANSWER':
-      return {
-        ...state,
-        selectedAnswer: action.payload.answerIndex,
-        hasAnswered: true
-      };
-      
+      return { ...state, selectedAnswer: action.payload.answerIndex, hasAnswered: true };
     case 'QUESTION_ENDED':
-      return {
-        ...state,
-        questionStats: action.payload,
-        gameStatus: 'results'
-      };
-      
+      return { ...state, questionStats: action.payload, gameStatus: 'results' };
     case 'WAITING_FOR_RESULTS':
-      return {
-        ...state,
-        gameStatus: 'waiting-results'
-      };
-      
+      return { ...state, gameStatus: 'waiting-results' };
     case 'PERSONAL_RESULT':
-      return {
-        ...state,
-        personalResult: action.payload,
-        gameStatus: 'results'
-      };
-      
+      return { ...state, personalResult: action.payload, gameStatus: 'results' };
     case 'SHOW_LEADERBOARD':
       return {
         ...state,
         leaderboard: action.payload.leaderboard,
         game: action.payload.game,
-        gameStatus: 'leaderboard'
+        gameStatus: 'leaderboard',
       };
-      
     case 'GAME_FINISHED':
-      return {
-        ...state,
-        finalScores: action.payload,
-        gameStatus: 'finished'
-      };
-      
+      return { ...state, finalScores: action.payload, gameStatus: 'finished' };
     case 'TICK_TIMER':
-      return {
-        ...state,
-        timeLeft: Math.max(0, state.timeLeft - 1)
-      };
-      
+      return { ...state, timeLeft: Math.max(0, state.timeLeft - 1) };
+    case 'HOST_RECONNECTING':
+      return { ...state, hostReconnecting: action.payload };
     default:
       return state;
   }
@@ -160,6 +118,7 @@ const initialState: GameState = {
   gameStatus: 'waiting',
   gameError: null,
   isValidating: true,
+  hostReconnecting: false,
 };
 
 export default function GamePage() {
@@ -182,37 +141,45 @@ export default function GamePage() {
       return;
     }
 
-    // Check if this is a player trying to rejoin a game
+    // Build the auth payload for validateGame
+    const buildAuth = (gameData?: Game) => {
+      if (isHost) {
+        const t = (() => {
+          try { return sessionStorage.getItem(HOST_TOKEN_KEY(gameId)) || ''; } catch { return ''; }
+        })();
+        return { hostToken: t };
+      }
+      if (gameData) {
+        const pin = gameData.pin;
+        const pid = (() => {
+          try { return localStorage.getItem(PLAYER_ID_KEY(pin)) || ''; } catch { return ''; }
+        })();
+        const tok = (() => {
+          try { return localStorage.getItem(PLAYER_TOKEN_KEY(pin)) || ''; } catch { return ''; }
+        })();
+        return { playerId: pid, playerToken: tok };
+      }
+      return {};
+    };
+
     const urlParams = new URLSearchParams(window.location.search);
-    const isPlayer = urlParams.get('player') === 'true';
-    
-    if (isPlayer) {
-      // Player is rejoining - first validate game to get the PIN
-      socket.emit('validateGame', gameId, (valid: boolean, gameData?: Game) => {
+    const isPlayerParam = urlParams.get('player') === 'true';
+
+    if (isPlayerParam) {
+      // First, validateGame with empty auth to fetch game (for PIN). Then re-validate with full auth.
+      socket.emit('validateGame', gameId, {}, (valid: boolean, gameData?: Game) => {
         if (valid && gameData) {
-          // Game exists, now check if we have a stored player ID for this game's PIN
-          const gamePin = gameData.pin;
-          const storedId = localStorage.getItem(`player_id_${gamePin}`) || undefined;
-          
-          if (storedId) {
-            // We have a stored player ID, try to rejoin
-            const playerName = gameData.players.find(p => p.id === storedId)?.name || 'Player';
-            
-            socket.emit('joinGame', gamePin, playerName, storedId, (success: boolean, game?: Game) => {
-              dispatch({ type: 'SET_VALIDATING', payload: false });
-              if (success && game) {
-                dispatch({ type: 'SET_GAME_DATA', payload: { game: game, status: game.status } });
-              } else {
-                dispatch({ type: 'SET_GAME_ERROR', payload: t('screens.gameError.unableToRejoin') });
-                setTimeout(() => router.push('/'), 3000);
-              }
-            });
-          } else {
-            // No stored player ID for this game
+          const auth = buildAuth(gameData);
+          // Re-validate with the real player auth so the server marks us as known
+          socket.emit('validateGame', gameId, auth, (valid2: boolean, gameData2?: Game) => {
             dispatch({ type: 'SET_VALIDATING', payload: false });
-            dispatch({ type: 'SET_GAME_ERROR', payload: t('screens.gameError.noPlayerData') });
-            setTimeout(() => router.push('/'), 3000);
-          }
+            if (valid2 && gameData2) {
+              dispatch({ type: 'SET_GAME_DATA', payload: { game: gameData2, status: gameData2.status } });
+            } else {
+              dispatch({ type: 'SET_GAME_ERROR', payload: t('screens.gameError.unableToRejoin') });
+              setTimeout(() => router.push('/'), 3000);
+            }
+          });
         } else {
           dispatch({ type: 'SET_VALIDATING', payload: false });
           dispatch({ type: 'SET_GAME_ERROR', payload: t('screens.gameError.gameNotFound') });
@@ -220,8 +187,8 @@ export default function GamePage() {
         }
       });
     } else {
-      // Host validation - just validate game exists
-      socket.emit('validateGame', gameId, (valid: boolean, gameData?: Game) => {
+      const auth = buildAuth();
+      socket.emit('validateGame', gameId, auth, (valid: boolean, gameData?: Game) => {
         dispatch({ type: 'SET_VALIDATING', payload: false });
         if (valid && gameData) {
           dispatch({ type: 'SET_GAME_DATA', payload: { game: gameData, status: gameData.status } });
@@ -232,49 +199,24 @@ export default function GamePage() {
       });
     }
 
-    socket.on('gameStarted', (gameData: Game) => {
-      // Removed console.log
-      dispatch({ type: 'GAME_STARTED', payload: gameData });
-    });
-
-    socket.on('thinkingPhase', (question: Question, thinkTime: number) => {
-      // Removed console.log
-      dispatch({ type: 'START_THINKING_PHASE', payload: { question, thinkTime } });
-    });
-
-    socket.on('answeringPhase', (answerTime: number) => {
-      // Removed console.log
-      dispatch({ type: 'START_ANSWERING_PHASE', payload: { answerTime } });
-    });
-
-    socket.on('questionEnded', () => {
-      // Both host and players wait for 1 second before results are shown
-      dispatch({ type: 'WAITING_FOR_RESULTS' });
-    });
-
-    socket.on('personalResult', (result: PersonalResult) => {
-      dispatch({ type: 'PERSONAL_RESULT', payload: result });
-    });
-
-    socket.on('hostResults', (stats: GameStats) => {
-      dispatch({ type: 'QUESTION_ENDED', payload: stats });
-    });
-
-    socket.on('leaderboardShown', (leaderboardData: Player[], gameData: Game) => {
-      dispatch({ type: 'SHOW_LEADERBOARD', payload: { leaderboard: leaderboardData, game: gameData } });
-      // Players stay on their personal result screen
-    });
-
-    socket.on('gameFinished', (scores: Player[]) => {
-      dispatch({ type: 'GAME_FINISHED', payload: scores });
-    });
-
-    socket.on('playerAnswered', (playerId: string) => {
-      console.log(`[PIN ${state.game?.pin}] Player answered: ${playerId}`);
-    });
-
+    socket.on('gameStarted', (gameData: Game) => dispatch({ type: 'GAME_STARTED', payload: gameData }));
+    socket.on('thinkingPhase', (question: Question, thinkTime: number) =>
+      dispatch({ type: 'START_THINKING_PHASE', payload: { question, thinkTime } })
+    );
+    socket.on('answeringPhase', (answerTime: number) =>
+      dispatch({ type: 'START_ANSWERING_PHASE', payload: { answerTime } })
+    );
+    socket.on('questionEnded', () => dispatch({ type: 'WAITING_FOR_RESULTS' }));
+    socket.on('personalResult', (result: PersonalResult) =>
+      dispatch({ type: 'PERSONAL_RESULT', payload: result })
+    );
+    socket.on('hostResults', (stats: GameStats) => dispatch({ type: 'QUESTION_ENDED', payload: stats }));
+    socket.on('leaderboardShown', (leaderboardData: Player[], gameData: Game) =>
+      dispatch({ type: 'SHOW_LEADERBOARD', payload: { leaderboard: leaderboardData, game: gameData } })
+    );
+    socket.on('gameFinished', (scores: Player[]) => dispatch({ type: 'GAME_FINISHED', payload: scores }));
+    socket.on('playerAnswered', () => {});
     socket.on('gameLogs', (tsvData: string, filename: string) => {
-      // Create and download the TSV file
       const blob = new Blob([tsvData], { type: 'text/tab-separated-values' });
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -284,8 +226,13 @@ export default function GamePage() {
       a.click();
       document.body.removeChild(a);
       window.URL.revokeObjectURL(url);
-      // Removed console.log
     });
+    socket.on('waitForNextQuestion', () => {
+      // Late joiner during answering — just stay on waiting screen
+      console.log('[client] Server says: wait for next question');
+    });
+    socket.on('hostReconnecting', () => dispatch({ type: 'HOST_RECONNECTING', payload: true }));
+    socket.on('hostReconnected', () => dispatch({ type: 'HOST_RECONNECTING', payload: false }));
 
     return () => {
       socket.off('gameStarted');
@@ -298,103 +245,88 @@ export default function GamePage() {
       socket.off('gameFinished');
       socket.off('playerAnswered');
       socket.off('gameLogs');
+      socket.off('waitForNextQuestion');
+      socket.off('hostReconnecting');
+      socket.off('hostReconnected');
     };
-  }, [gameId, isHost, router, state.game?.pin]);
+  }, [gameId, isHost, router, t]);
 
-  // Timer effect for question countdown
   useEffect(() => {
     let timer: NodeJS.Timeout | null = null;
-    
     if (state.timeLeft > 0 && (state.phase === 'thinking' || state.phase === 'answering')) {
-      timer = setInterval(() => {
-        dispatch({ type: 'TICK_TIMER' });
-      }, 1000);
+      timer = setInterval(() => dispatch({ type: 'TICK_TIMER' }), 1000);
     }
-
-    return () => {
-      if (timer) {
-        clearInterval(timer);
-      }
-    };
+    return () => { if (timer) clearInterval(timer); };
   }, [state.timeLeft, state.phase]);
 
   const submitAnswer = (answerIndex: number) => {
     if (state.hasAnswered || !state.currentQuestion || state.phase !== 'answering') return;
-    
     dispatch({ type: 'SUBMIT_ANSWER', payload: { answerIndex } });
-    
-    // Get persistent player ID from localStorage
     const gamePin = state.game?.pin;
-    const persistentId = gamePin ? localStorage.getItem(`player_id_${gamePin}`) || undefined : undefined;
-    
+    if (!gamePin || !gameId) return;
+    const persistentId = (() => {
+      try { return localStorage.getItem(PLAYER_ID_KEY(gamePin)) || ''; } catch { return ''; }
+    })();
+    const playerToken = (() => {
+      try { return localStorage.getItem(PLAYER_TOKEN_KEY(gamePin)) || ''; } catch { return ''; }
+    })();
+    if (!persistentId || !playerToken) {
+      console.warn('[submitAnswer] missing playerId/playerToken — answer cannot be submitted');
+      return;
+    }
     const socket = getSocket();
-    if (!gameId) return;
+    socket.emit('submitAnswer', gameId, state.currentQuestion.id, answerIndex, persistentId, playerToken);
+  };
 
-    socket.emit('submitAnswer', gameId, state.currentQuestion.id, answerIndex, persistentId);
+  const getHostToken = (): string => {
+    if (!gameId) return '';
+    try { return sessionStorage.getItem(HOST_TOKEN_KEY(gameId)) || ''; } catch { return ''; }
   };
 
   const nextQuestion = () => {
     const socket = getSocket();
     if (!gameId) return;
-    socket.emit('nextQuestion', gameId);
+    socket.emit('nextQuestion', gameId, getHostToken());
   };
 
   const showLeaderboard = () => {
     const socket = getSocket();
     if (!gameId) return;
-    socket.emit('showLeaderboard', gameId);
+    socket.emit('showLeaderboard', gameId, getHostToken());
   };
 
   const downloadLogs = () => {
     const socket = getSocket();
     if (!gameId) return;
-    socket.emit('downloadGameLogs', gameId);
+    socket.emit('downloadGameLogs', gameId, getHostToken());
   };
 
-
-
-  // Loading/Validation screen
-  if (state.isValidating) {
-    return <GameValidationScreen />;
-  }
-
-  // Error screen
-  if (state.gameError) {
-    return <GameErrorScreen error={state.gameError} />;
-  }
-
-  // Waiting screen
+  if (state.isValidating) return <GameValidationScreen />;
+  if (state.gameError) return <GameErrorScreen error={state.gameError} />;
   if (state.gameStatus === 'waiting' || state.gameStatus === 'preparation') {
     return <GameWaitingScreen gameStatus={state.gameStatus} />;
   }
-
-  // Leaderboard screen - only shown to hosts, players stay on results
   if (state.gameStatus === 'leaderboard' && isHost) {
     return (
-      <GameLeaderboardScreen 
+      <GameLeaderboardScreen
         leaderboard={state.leaderboard}
         game={state.game}
         onNextQuestion={nextQuestion}
       />
     );
   }
-
-  // Final results screen
   if (state.gameStatus === 'finished') {
     return (
-      <GameFinalResultsScreen 
+      <GameFinalResultsScreen
         finalScores={state.finalScores}
         isHost={isHost}
         onDownloadLogs={downloadLogs}
       />
     );
   }
-
-  // Thinking Phase - Show only question for host, waiting message for players
   if (state.gameStatus === 'thinking' && state.phase === 'thinking' && state.currentQuestion) {
-    // Removed console.log
     return (
-      <GameThinkingPhaseScreen 
+      <GameThinkingPhaseScreen
         currentQuestion={state.currentQuestion}
         timeLeft={state.timeLeft}
         game={state.game}
@@ -403,16 +335,12 @@ export default function GamePage() {
       />
     );
   }
-
-  // Waiting for results screen - shows after question ends but before results are revealed
   if (state.gameStatus === 'waiting-results') {
     return <GameWaitingForResultsScreen isHost={isHost} />;
   }
-
-  // Answering Phase
   if (state.gameStatus === 'answering' && state.phase === 'answering' && state.currentQuestion) {
     return (
-      <GameAnsweringPhaseScreen 
+      <GameAnsweringPhaseScreen
         currentQuestion={state.currentQuestion}
         timeLeft={state.timeLeft}
         game={state.game}
@@ -423,24 +351,19 @@ export default function GamePage() {
       />
     );
   }
-
-  // Results screen - Different views for host and players
   if (state.gameStatus === 'results') {
     return (
-      <GameResultsPhaseScreen 
+      <GameResultsPhaseScreen
         isHost={isHost}
         isPlayer={isPlayer}
         questionStats={state.questionStats}
         personalResult={state.personalResult}
+        onShowLeaderboard={showLeaderboard}
         currentQuestion={state.currentQuestion}
         selectedAnswer={state.selectedAnswer}
         game={state.game}
-        onShowLeaderboard={showLeaderboard}
       />
     );
   }
-
-  // Removed console.log
-  
   return <GameFallbackScreen />;
-} 
+}
