@@ -3,8 +3,8 @@ import { initReactI18next } from 'react-i18next';
 import LanguageDetector from 'i18next-browser-languagedetector';
 
 import enTranslations from '@/locales/en.json';
-import frTranslations from '@/locales/fr.json';
-import ptTranslations from '@/locales/pt.json';
+import amTranslations from '@/locales/am.json';
+import omTranslations from '@/locales/om.json';
 
 if (!i18n.isInitialized) {
   i18n
@@ -12,29 +12,19 @@ if (!i18n.isInitialized) {
     .use(initReactI18next)
     .init({
       resources: {
-        en: {
-          translation: enTranslations,
-        },
-        fr: {
-          translation: frTranslations,
-        },
-        pt: {
-          translation: ptTranslations,
-        },
+        en: { translation: enTranslations },
+        am: { translation: amTranslations },
+        om: { translation: omTranslations },
       },
       fallbackLng: {
-        'fr-FR': ['fr', 'en'],
-        'fr-CA': ['fr', 'en'],
-        'pt-BR': ['pt', 'en'],
-        'pt-PT': ['pt', 'en'],
+        'am-ET': ['am', 'en'],
+        'om-ET': ['om', 'en'],
         'en-US': ['en'],
         'en-GB': ['en'],
         default: ['en'],
       },
-      supportedLngs: ['en', 'fr', 'pt'],
-      // Normalize language codes (e.g., 'fr-FR' -> 'fr', 'en-US' -> 'en')
+      supportedLngs: ['en', 'am', 'om'],
       load: 'languageOnly',
-      // Allow matching region codes to base language codes
       nonExplicitSupportedLngs: true,
       detection: {
         order: ['localStorage', 'navigator', 'htmlTag'],
@@ -47,4 +37,3 @@ if (!i18n.isInitialized) {
 }
 
 export default i18n;
-

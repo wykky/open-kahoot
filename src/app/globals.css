@@ -22,12 +22,12 @@
 body {
   background: #ffffff;
   background-image: 
-    linear-gradient(to bottom, rgb(255, 255, 255), #4f39f627),
-    radial-gradient(circle, #442dd76e 0px, transparent 2px),
-    radial-gradient(circle, #442dd76e 0px, transparent 2px),
-    repeating-linear-gradient(to left, #442dd700 0px, #442dd700 1px, transparent 1px, transparent 38px),
-    repeating-linear-gradient(30deg, #442dd71a 0px, #442dd71a 1px, transparent 1px, transparent 19px),
-    repeating-linear-gradient(-30deg, #442dd71a 0px, #442dd71a 1px, transparent 1px, transparent 19px);
+    linear-gradient(to bottom, rgb(255, 255, 255), #FFC60027),
+    radial-gradient(circle, #FFC6006e 0px, transparent 2px),
+    radial-gradient(circle, #FFC6006e 0px, transparent 2px),
+    repeating-linear-gradient(to left, #FFC60000 0px, #FFC60000 1px, transparent 1px, transparent 38px),
+    repeating-linear-gradient(30deg, #FFC6001a 0px, #FFC6001a 1px, transparent 1px, transparent 19px),
+    repeating-linear-gradient(-30deg, #FFC6001a 0px, #FFC6001a 1px, transparent 1px, transparent 19px);
   
   background-size: 
     100% 100%,

@@ -16,7 +16,7 @@ const PendingLayout = ({ icon, iconColor, title, description, ignoreMinHeight }:
         <div className={`${ignoreMinHeight ? '' : 'min-h-screen'} ${getGradient('waiting')} flex items-center justify-center p-8`}>
           <div className="text-center">
             {icon && (
-              <AnimatedIcon icon={icon} size="md" iconColor={iconColor || "text-indigo-400"} className="mb-4" />
+              <AnimatedIcon icon={icon} size="md" iconColor={iconColor || "text-yellow-500"} className="mb-4" />
             )}
             <h1 className="text-3xl font-bold text-black mb-4">
               {title}

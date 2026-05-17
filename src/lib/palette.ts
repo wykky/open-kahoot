@@ -4,16 +4,16 @@
 // Accent color (purple) - centralized for easy theme changes
 // Change these values to change the accent color throughout the app
 const accentColor = {
-  bg: 'bg-indigo-600',
-  bgHover: 'hover:bg-indigo-700',
-  bgLight: 'bg-indigo-500',
-  text: 'text-indigo-600',
-  textHover: 'hover:text-indigo-700',
-  border: 'border-indigo-500',
-  borderHover: 'border-indigo-600',
-  ring: 'ring-indigo-500/50',
-  ringFocus: 'focus:ring-indigo-500/50',
-  borderFocus: 'focus:border-indigo-500'
+  bg: 'bg-yellow-600',
+  bgHover: 'hover:bg-yellow-700',
+  bgLight: 'bg-yellow-500',
+  text: 'text-yellow-600',
+  textHover: 'hover:text-yellow-700',
+  border: 'border-yellow-500',
+  borderHover: 'border-yellow-600',
+  ring: 'ring-yellow-500/50',
+  ringFocus: 'focus:ring-yellow-500/50',
+  borderFocus: 'focus:border-yellow-500'
 };
 
 export const palette = {
@@ -46,7 +46,7 @@ export const palette = {
     primary: {
       background: accentColor.bg,
       hover: accentColor.bgHover,
-      text: 'text-white'
+      text: 'text-black'
     },
     secondary: {
       background: 'bg-white',
@@ -138,9 +138,9 @@ export const palette = {
     quaternary: 'text-gray-300',
     accent: accentColor.text,
     // White text for purple backgrounds
-    onPurple: 'text-white',
-    onPurpleSecondary: 'text-white/90',
-    onPurpleTertiary: 'text-white/70'
+    onPurple: 'text-black',
+    onPurpleSecondary: 'text-black/90',
+    onPurpleTertiary: 'text-black/70'
   },
 
   // Status colors

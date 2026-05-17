@@ -1,0 +1,10 @@
+services:
+  atenu-live:
+    build: .
+    container_name: atenu-live
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8096:3000"
+    env_file: .env.local
+    mem_limit: 1g
+    cpus: 2
