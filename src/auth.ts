@@ -45,6 +45,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         hash: {},
       },
       async authorize(credentials) {
+        console.error("[tg-auth] authorize called with keys:", credentials ? Object.keys(credentials) : "no-credentials");
         if (!credentials) return null;
         const data: Record<string, string> = {};
         for (const [k, v] of Object.entries(credentials)) {
@@ -52,14 +53,22 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
             data[k] = String(v);
           }
         }
+        console.error("[tg-auth] data keys:", Object.keys(data), "id=", data.id, "hash-prefix=", data.hash?.slice(0, 8));
         const botToken = process.env.TELEGRAM_BOT_TOKEN;
-        if (!botToken) return null;
-        if (!verifyTelegramAuth(data, botToken)) return null;
-        // Reject payloads older than 1 day
-        const authDate = parseInt(data.auth_date, 10);
-        if (!authDate || Math.abs(Date.now() / 1000 - authDate) > 86400) {
+        if (!botToken) {
+          console.error("[tg-auth] FAIL: TELEGRAM_BOT_TOKEN not set");
           return null;
         }
+        if (!verifyTelegramAuth(data, botToken)) {
+          console.error("[tg-auth] FAIL: HMAC verification failed");
+          return null;
+        }
+        const authDate = parseInt(data.auth_date, 10);
+        if (!authDate || Math.abs(Date.now() / 1000 - authDate) > 86400) {
+          console.error("[tg-auth] FAIL: auth_date stale or missing:", data.auth_date);
+          return null;
+        }
+        console.error("[tg-auth] OK: signing in tg:" + data.id);
         const displayName =
           [data.first_name, data.last_name].filter(Boolean).join(" ") ||
           data.username ||
