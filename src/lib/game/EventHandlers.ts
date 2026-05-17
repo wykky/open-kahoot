@@ -7,7 +7,7 @@ import type {
   Game,
   ValidateGameAuth,
 } from '@/types/game';
-import { GameManager } from './GameManager';
+import { GameManager, sanitizeGameForClient } from './GameManager';
 import { PlayerManager } from './PlayerManager';
 import { QuestionManager } from './QuestionManager';
 import { GameplayLoop } from './GameplayLoop';
@@ -45,7 +45,7 @@ export class EventHandlers {
           socket.join(game.id);
           const playerCount = this.playerManager.getConnectedPlayers(game).length;
           console.log(`[PIN ${game.pin}] Starting game with ${playerCount} active players`);
-          this.io.to(game.id).emit('gameStarted', game);
+          this.io.to(game.id).emit('gameStarted', sanitizeGameForClient(game));
           this.gameplayLoop.startGameLoop(game);
         });
       });
@@ -90,7 +90,7 @@ export class EventHandlers {
           if (ok) {
             const player = this.playerManager.getPlayerById(playerId, game);
             console.log(`[PIN ${game.pin}] Toggled dyslexia for ${player?.name || playerId} → ${player?.hasDyslexiaSupport ? 'on' : 'off'}`);
-            this.io.to(game.id).emit('gameUpdated', game);
+            this.io.to(game.id).emit('gameUpdated', sanitizeGameForClient(game));
           } else {
             socket.emit('error', 'Failed to toggle dyslexia support');
           }
@@ -153,7 +153,7 @@ export class EventHandlers {
       const game = this.gameManager.createGame(socket.id, title, questions, settings);
       const hostToken = issueHostToken(game.id, game.hostId);
       socket.join(game.id);
-      callback(game, hostToken);
+      callback(sanitizeGameForClient(game), hostToken);
     } catch (error) {
       console.error('[CREATE_GAME] Error:', error);
       socket.emit('error', 'Failed to create game');
@@ -196,7 +196,12 @@ export class EventHandlers {
       } else if (result.reason) {
         console.warn(`[JOIN_GAME] ${socket.id}: ${result.reason}`);
       }
-      callback?.(result.success, result.game, result.playerId, result.playerToken);
+      callback?.(
+        result.success,
+        result.game ? sanitizeGameForClient(result.game) : undefined,
+        result.playerId,
+        result.playerToken
+      );
     } catch (error) {
       console.error('[JOIN_GAME] Error:', error);
       callback?.(false);
@@ -262,7 +267,7 @@ export class EventHandlers {
       if (game.gameLoopActive) {
         this.gameplayLoop.syncPlayerToCurrentPhase(game, socket.id, isHost, isKnownPlayer);
       }
-      callback(true, game);
+      callback(true, sanitizeGameForClient(game));
     } catch (error) {
       console.error('[VALIDATE_GAME] Error:', error);
       callback(false);

@@ -131,3 +131,15 @@ export class GameManager {
     return this.games.size;
   }
 }
+
+/**
+ * Phase 3: strip server-only heavy fields before broadcasting a Game to clients.
+ *
+ * `answerHistory` grows unbounded over a game's lifetime (200 players × 60 questions
+ * = 12k records, ~200 bytes each = ~2.4 MB). Multiplying that by every emit to every
+ * socket is O(n²) bandwidth. Clients never read it — it's only used server-side for
+ * the TSV log export. This helper returns a shallow copy with `answerHistory: []`.
+ */
+export function sanitizeGameForClient(game: Game): Game {
+  return { ...game, answerHistory: [] };
+}

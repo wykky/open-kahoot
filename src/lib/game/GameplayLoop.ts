@@ -5,14 +5,14 @@ import type {
   Game,
   GamePhase
 } from '@/types/game';
-import { GameManager } from './GameManager';
+import { GameManager, sanitizeGameForClient } from './GameManager';
 import { PlayerManager } from './PlayerManager';
 import { QuestionManager } from './QuestionManager';
 import { TimerManager } from './TimerManager';
 
 // How long to wait for the host to reconnect after they disconnect before finishing the game.
 // Tunable: longer = friendlier for flaky wifi, shorter = faster cleanup of dead games.
-const HOST_DISCONNECT_GRACE_MS = 60_000;
+const HOST_DISCONNECT_GRACE_MS = 5 * 60_000; // 5 minutes — enough time for host to reopen browser, find the URL, and resume
 
 export class GameplayLoop {
   private phaseCallbacks: Map<string, (() => void) | null> = new Map();
@@ -194,7 +194,7 @@ export class GameplayLoop {
     const leaderboard = this.playerManager.getLeaderboard(game);
     const topPlayer = leaderboard[0] || null;
     console.log(`[PIN ${game.pin}] Leaderboard | Top: ${topPlayer ? `${topPlayer.name} (${topPlayer.score})` : 'none'}`);
-    this.io.to(game.id).emit('leaderboardShown', leaderboard, game);
+    this.io.to(game.id).emit('leaderboardShown', leaderboard, sanitizeGameForClient(game));
   }
 
   private executeFinishedPhase(game: Game): void {
@@ -279,7 +279,7 @@ export class GameplayLoop {
       }
       case 'leaderboard': {
         const leaderboard = this.playerManager.getLeaderboard(game);
-        this.io.to(socketId).emit('leaderboardShown', leaderboard, game);
+        this.io.to(socketId).emit('leaderboardShown', leaderboard, sanitizeGameForClient(game));
         break;
       }
       case 'finished': {
