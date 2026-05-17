@@ -30,7 +30,7 @@ export default function UserMenu() {
   if (!session) {
     return (
       <button
-        onClick={() => signIn("authentik")}
+        onClick={() => signIn()}
         className="flex items-center gap-2 p-2 sm:px-3 sm:py-2 rounded-lg bg-yellow-400 text-black border-2 border-black hover:bg-black hover:text-yellow-400 transition-colors text-sm font-bold shadow-md"
         aria-label="Sign in with Atenu"
         title="Sign in"

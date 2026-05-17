@@ -1,23 +1,95 @@
 import NextAuth from "next-auth";
-import Authentik from "next-auth/providers/authentik";
+import Google from "next-auth/providers/google";
+import Credentials from "next-auth/providers/credentials";
+import { createHash, createHmac } from "crypto";
+
+// Verify Telegram Login Widget payload per Telegram's spec.
+// https://core.telegram.org/widgets/login#checking-authorization
+function verifyTelegramAuth(
+  data: Record<string, string>,
+  botToken: string
+): boolean {
+  const { hash, ...rest } = data;
+  if (!hash || !botToken) return false;
+  const dataCheckString = Object.keys(rest)
+    .sort()
+    .map((k) => `${k}=${rest[k]}`)
+    .join("\n");
+  const secret = createHash("sha256").update(botToken).digest();
+  const hmac = createHmac("sha256", secret)
+    .update(dataCheckString)
+    .digest("hex");
+  return hmac === hash;
+}
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
-  providers: [
-    Authentik({
-      clientId: process.env.AUTHENTIK_ID!,
-      clientSecret: process.env.AUTHENTIK_SECRET!,
-      issuer: process.env.AUTHENTIK_ISSUER!,
-    }),
-  ],
   trustHost: true, // required behind Cloudflare Tunnel
   pages: {
-    signIn: "/api/auth/signin",
+    signIn: "/auth/signin",
   },
+  providers: [
+    Google({
+      clientId: process.env.GOOGLE_CLIENT_ID,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+    }),
+    Credentials({
+      id: "telegram",
+      name: "Telegram",
+      credentials: {
+        id: {},
+        first_name: {},
+        last_name: {},
+        username: {},
+        photo_url: {},
+        auth_date: {},
+        hash: {},
+      },
+      async authorize(credentials) {
+        if (!credentials) return null;
+        const data: Record<string, string> = {};
+        for (const [k, v] of Object.entries(credentials)) {
+          if (v !== undefined && v !== null && v !== "") {
+            data[k] = String(v);
+          }
+        }
+        const botToken = process.env.TELEGRAM_BOT_TOKEN;
+        if (!botToken) return null;
+        if (!verifyTelegramAuth(data, botToken)) return null;
+        // Reject payloads older than 1 day
+        const authDate = parseInt(data.auth_date, 10);
+        if (!authDate || Math.abs(Date.now() / 1000 - authDate) > 86400) {
+          return null;
+        }
+        const displayName =
+          [data.first_name, data.last_name].filter(Boolean).join(" ") ||
+          data.username ||
+          `tg:${data.id}`;
+        return {
+          id: `tg:${data.id}`,
+          name: displayName,
+          email: data.username ? `${data.username}@telegram.local` : null,
+          image: data.photo_url || null,
+        };
+      },
+    }),
+  ],
+  session: { strategy: "jwt" },
   callbacks: {
+    async jwt({ token, user }) {
+      if (user) {
+        // @ts-expect-error: user.id is present on first sign-in
+        token.id = user.id;
+        // @ts-expect-error: distinguish provider for VIP lookups later
+        token.provider = user.id?.startsWith("tg:") ? "telegram" : "google";
+      }
+      return token;
+    },
     async session({ session, token }) {
-      // Pass user id from token into session
-      if (session.user && token.sub) {
-        (session.user as { id?: string }).id = token.sub;
+      if (token && session.user) {
+        // @ts-expect-error: extend session user
+        if (token.id) session.user.id = token.id;
+        // @ts-expect-error
+        if (token.provider) session.user.provider = token.provider;
       }
       return session;
     },
