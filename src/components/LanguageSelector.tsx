@@ -39,11 +39,12 @@ export default function LanguageSelector() {
     <div className="relative inline-block" ref={ref}>
       <button
         onClick={() => setOpen(!open)}
-        className="flex items-center gap-2 px-3 py-2 rounded-lg bg-black text-yellow-400 border-2 border-yellow-400 hover:bg-yellow-400 hover:text-black transition-colors text-sm font-bold shadow-md"
-        aria-label="Choose language"
+        className="flex items-center gap-2 p-2 sm:px-3 sm:py-2 rounded-lg bg-black text-yellow-400 border-2 border-yellow-400 hover:bg-yellow-400 hover:text-black transition-colors text-sm font-bold shadow-md"
+        aria-label={`Choose language (current: ${current.label})`}
+        title={current.label}
       >
-        <Globe className="w-4 h-4" />
-        <span>{current.label}</span>
+        <Globe className="w-5 h-5 sm:w-4 sm:h-4" />
+        <span className="hidden sm:inline">{current.label}</span>
       </button>
       {open && (
         <div className="absolute right-0 top-full mt-2 bg-white border-2 border-black rounded-lg shadow-xl overflow-hidden z-50 min-w-[160px]">
