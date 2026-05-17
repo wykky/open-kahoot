@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Galindo, Coiny, Noto_Sans_Ethiopic } from "next/font/google";
 import "./globals.css";
 import I18nProvider from "@/components/I18nProvider";
+import SessionWrapper from "@/components/SessionWrapper";
 
 const galindo = Galindo({
   variable: "--font-title",
@@ -36,9 +37,11 @@ export default function RootLayout({
       <body
         className={`${galindo.variable} ${chango.variable} ${notoEthiopic.variable} antialiased`}
       >
-        <I18nProvider>
-          {children}
-        </I18nProvider>
+        <SessionWrapper>
+          <I18nProvider>
+            {children}
+          </I18nProvider>
+        </SessionWrapper>
       </body>
     </html>
   );

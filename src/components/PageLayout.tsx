@@ -1,6 +1,7 @@
 import { gradients } from '@/lib/palette';
 import Link from 'next/link';
 import LanguageSelector from './LanguageSelector';
+import UserMenu from './UserMenu';
 
 interface PageLayoutProps {
   children: React.ReactNode;
@@ -35,7 +36,8 @@ export default function PageLayout({
 
   return (
     <div className={`min-h-screen ${gradientClasses[gradient]} p-8 ${centerVertically ? 'flex flex-col justify-center' : ''} relative`}>
-      <div className="absolute top-4 right-4 z-50">
+      <div className="absolute top-4 right-4 z-50 flex items-center gap-2">
+        <UserMenu />
         <LanguageSelector />
       </div>
       <div className={`container mx-auto ${maxWidthClasses[maxWidth]}`}>
