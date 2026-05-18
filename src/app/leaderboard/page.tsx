@@ -14,7 +14,6 @@ export const dynamic = 'force-dynamic';
 type Range = 'all' | 'month' | 'week';
 
 function rangeToSinceTs(range: Range): number {
-  const now = Date.now();
   if (range === 'week') {
     const d = new Date();
     const day = d.getUTCDay(); // 0 = Sun, 1 = Mon ...

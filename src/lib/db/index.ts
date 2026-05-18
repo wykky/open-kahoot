@@ -14,7 +14,7 @@
 import Database from 'better-sqlite3';
 import { mkdirSync } from 'fs';
 import { dirname } from 'path';
-import type { Game, Question, Player, AnswerRecord } from '@/types/game';
+import type { Game, Player, AnswerRecord } from '@/types/game';
 
 const DB_PATH = process.env.ATENU_DB_PATH || '/app/data/atenu.db';
 
