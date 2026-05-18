@@ -118,7 +118,12 @@ export class EventHandlers {
       return;
     }
     if (!verifyHostToken(hostToken, game.id, game.hostId)) {
-      console.warn(`[${eventName}] Rejected from ${socket.id}: invalid hostToken (PIN ${game.pin})`);
+      const tokStr = typeof hostToken === 'string' ? hostToken : `[${typeof hostToken}]`;
+      const tokLen = typeof hostToken === 'string' ? hostToken.length : 0;
+      const tokPrefix = typeof hostToken === 'string' ? hostToken.slice(0, 12) : tokStr;
+      console.warn(
+        `[${eventName}] Rejected from ${socket.id} | PIN ${game.pin} | gameId=${game.id.slice(0, 8)}... | hostId=${game.hostId.slice(0, 8)}... | token type=${typeof hostToken} len=${tokLen} prefix='${tokPrefix}'`
+      );
       socket.emit('error', 'Not authorized');
       return;
     }
@@ -193,6 +198,9 @@ export class EventHandlers {
       const game = this.gameManager.createGame(socket.id, title, questions, settings, trustedUserId);
       const hostToken = issueHostToken(game.id, game.hostId);
       socket.join(game.id);
+      console.log(
+        `[CREATE_GAME] Issued hostToken | PIN ${game.pin} | gameId=${game.id.slice(0, 8)}... | hostId=${game.hostId.slice(0, 8)}... | token prefix='${hostToken.slice(0, 12)}'`
+      );
       callback(sanitizeGameForClient(game), hostToken);
     } catch (error) {
       console.error('[CREATE_GAME] Error:', error);
