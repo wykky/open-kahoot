@@ -145,7 +145,7 @@ export default function GamePage() {
     const buildAuth = (gameData?: Game) => {
       if (isHost) {
         const t = (() => {
-          try { return sessionStorage.getItem(HOST_TOKEN_KEY(gameId)) || ''; } catch { return ''; }
+          try { return localStorage.getItem(HOST_TOKEN_KEY(gameId)) || ''; } catch { return ''; }
         })();
         return { hostToken: t };
       }
@@ -279,8 +279,11 @@ export default function GamePage() {
   };
 
   const getHostToken = (): string => {
-    if (!gameId) return '';
-    try { return sessionStorage.getItem(HOST_TOKEN_KEY(gameId)) || ''; } catch { return ''; }
+    // Read URL directly to bypass any stale React closure / useParams transient.
+    const path = typeof window === 'undefined' ? '' : window.location.pathname;
+    const id = path.split('/')[2] || gameId;
+    if (!id) return '';
+    try { return localStorage.getItem(HOST_TOKEN_KEY(id)) || ''; } catch { return ''; }
   };
 
   const nextQuestion = () => {
@@ -292,7 +295,9 @@ export default function GamePage() {
   const showLeaderboard = () => {
     const socket = getSocket();
     if (!gameId) return;
-    socket.emit('showLeaderboard', gameId, getHostToken());
+    const tok = getHostToken();
+    console.log('[client] showLeaderboard | gameId:', gameId, '| token len:', tok.length, '| prefix:', tok.slice(0, 12));
+    socket.emit('showLeaderboard', gameId, tok);
   };
 
   const downloadLogs = () => {
