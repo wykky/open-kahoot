@@ -1,7 +1,6 @@
 'use client';
 
 import { Trophy } from 'lucide-react';
-import { useTranslation } from 'react-i18next';
 import { getGradient } from '@/lib/palette';
 import AnimatedIcon from '@/components/AnimatedIcon';
 import HostResultsScreen from '@/components/host-screens/HostResultsScreen';
@@ -29,7 +28,6 @@ export default function GameResultsPhaseScreen({
   selectedAnswer,
   game
 }: GameResultsPhaseScreenProps) {
-  const { t } = useTranslation();
   const showOnPlayers = game?.settings.showQuestionOnPlayers ?? true;
 
   // Host view
@@ -66,8 +64,8 @@ export default function GameResultsPhaseScreen({
     <div className={`min-h-screen ${getGradient('waiting')} flex items-center justify-center p-8`}>
       <div className="text-center">
         <AnimatedIcon icon={Trophy} size="md" iconColor="text-gray-400" className="mb-4" />
-        <h1 className="text-3xl font-bold text-black mb-4">{t('screens.results.loadingTitle')}</h1>
-        <p className="text-gray-600 text-lg">{t('screens.results.loadingDescription')}</p>
+        <h1 className="text-3xl font-bold text-black mb-4">Getting your results ready...</h1>
+        <p className="text-gray-600 text-lg">Hold tight, we&apos;re calculating scores!</p>
       </div>
     </div>
   );

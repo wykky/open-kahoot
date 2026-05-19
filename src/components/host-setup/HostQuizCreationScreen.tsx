@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import { useTranslation } from 'react-i18next';
 import { Download, MonitorPlay } from 'lucide-react';
 import type { Question, GameSettings } from '@/types/game';
 import PageLayout from '@/components/PageLayout';
@@ -42,7 +41,6 @@ export default function HostQuizCreationScreen({
   onCreateGame,
   onGenerateAIQuestions
 }: HostQuizCreationScreenProps) {
-  const { t } = useTranslation();
   const [isAIModalOpen, setIsAIModalOpen] = useState(false);
   const isFormValid = !questions.some(q => !q.question || q.options.some(o => !o));
 
@@ -77,7 +75,7 @@ export default function HostQuizCreationScreen({
                 size="lg"
                 icon={Download}
               >
-                {t('host.quizCreation.downloadTSV')}
+                Download TSV
               </Button>
               <Button
                 onClick={onCreateGame}
@@ -86,7 +84,7 @@ export default function HostQuizCreationScreen({
                 size="lg"
                 icon={MonitorPlay}
               >
-                {t('host.quizCreation.createGame')}
+                Create Game
               </Button>
             </div>
           </div>

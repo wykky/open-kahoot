@@ -1,6 +1,5 @@
 'use client';
 
-import { useTranslation } from 'react-i18next';
 import { Check, X } from 'lucide-react';
 import { getChoiceColor } from '@/lib/palette';
 import type { PersonalResult, Question } from '@/types/game';
@@ -16,7 +15,6 @@ export default function PlayerResultsScreen({
   currentQuestion,
   selectedAnswer
 }: PlayerResultsScreenProps) {
-  const { t } = useTranslation();
   const showAnswers = !!currentQuestion;
 
   return (
@@ -24,7 +22,7 @@ export default function PlayerResultsScreen({
       {/* Result Header */}
       <div className="mb-6">
         <h1 className="text-4xl sm:text-5xl text-black mb-4 font-subtitle">
-          {personalResult.wasCorrect ? t('screens.results.correct') : t('screens.results.incorrect')}
+          {personalResult.wasCorrect ? 'Correct!' : 'Incorrect!'}
         </h1>
       </div>
 
@@ -75,7 +73,7 @@ export default function PlayerResultsScreen({
           {personalResult.explanation && (
             <div className="mt-4 pt-4 border-t border-gray-200">
               <p className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-1">
-                {t('screens.results.explanation', { defaultValue: 'Explanation' })}
+                Explanation
               </p>
               <p className="text-sm text-gray-700 leading-relaxed">
                 {personalResult.explanation}
@@ -87,7 +85,7 @@ export default function PlayerResultsScreen({
 
       {/* Points Earned */}
       <div className="bg-gray-50 rounded-xl p-4 sm:p-5 mb-4 border border-gray-200">
-        <p className="text-gray-600 text-sm mb-1">{t('screens.results.pointsEarned')}</p>
+        <p className="text-gray-600 text-sm mb-1">Points earned this question</p>
         <p className="text-3xl sm:text-4xl font-bold text-black">
           +{personalResult.pointsEarned}
         </p>
@@ -95,32 +93,32 @@ export default function PlayerResultsScreen({
         <div className="flex flex-wrap justify-center gap-2 mt-2">
           {(personalResult.streakBonus ?? 0) > 0 && (
             <span className="text-sm inline-flex items-center gap-1 px-3 py-1 rounded-full bg-yellow-400 text-black border-2 border-black font-bold">
-              🔥 {personalResult.currentStreak} {t('screens.results.streakLabel', { defaultValue: 'streak' })} · +{personalResult.streakBonus}
+              🔥 {personalResult.currentStreak} streak · +{personalResult.streakBonus}
             </span>
           )}
           {(personalResult.firstCorrectBonus ?? 0) > 0 && (
             <span className="text-sm inline-flex items-center gap-1 px-3 py-1 rounded-full bg-black text-yellow-400 border-2 border-black font-bold">
-              🥇 {t('screens.results.firstCorrectLabel', { defaultValue: 'First!' })} · +{personalResult.firstCorrectBonus}
+              🥇 First! · +{personalResult.firstCorrectBonus}
             </span>
           )}
         </div>
-        <p className="text-gray-600 text-sm mt-1">{t('screens.results.totalScore')} {personalResult.totalScore}</p>
+        <p className="text-gray-600 text-sm mt-1">Total score: {personalResult.totalScore}</p>
       </div>
 
       {/* Position & Competition */}
       <div className="bg-gray-50 rounded-xl p-4 sm:p-5 mb-4 border border-gray-200">
-        <p className="text-gray-600 text-sm mb-1">{t('screens.results.currentPosition')}</p>
+        <p className="text-gray-600 text-sm mb-1">Current position</p>
         <div className="flex items-center justify-center gap-4 mb-2">
           <span className="text-3xl sm:text-4xl font-bold text-black">#{personalResult.position}</span>
         </div>
         {personalResult.pointsBehind > 0 ? (
           <p className="text-gray-600 text-sm">
-            {personalResult.pointsBehind} {t('screens.results.pointsBehind')}{' '}
+            {personalResult.pointsBehind} points behind{' '}
             <span className="font-bold text-black">{personalResult.nextPlayerName}</span>
           </p>
         ) : (
           <p className="font-semibold text-sm">
-            {t('screens.results.inTheLead')}
+            You&apos;re in the lead! Keep it up!
           </p>
         )}
       </div>
@@ -129,7 +127,7 @@ export default function PlayerResultsScreen({
 
       {/* Waiting Message */}
       <div className="text-center mt-4">
-        <p className="text-gray-600 text-sm">{t('screens.results.waitingForHost')}</p>
+        <p className="text-gray-600 text-sm">Waiting for host to continue...</p>
         <div className="flex justify-center mt-3">
           <div className="animate-pulse flex space-x-1">
             <div className="w-2 h-2 bg-gray-400 rounded-full"></div>

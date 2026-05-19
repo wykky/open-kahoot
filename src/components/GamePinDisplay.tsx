@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useTranslation } from 'react-i18next';
 import { createPortal } from 'react-dom';
 import QRCode from 'react-qr-code';
 
@@ -14,7 +13,6 @@ export default function GamePinDisplay({
   pin, 
   joinUrl
 }: GamePinDisplayProps) {
-  const { t } = useTranslation();
   const [showQRModal, setShowQRModal] = useState(false);
 
   // Handle ESC key to close modal
@@ -61,13 +59,13 @@ export default function GamePinDisplay({
     <div className="flex gap-6 mb-6 justify-center">
       {/* Website URL Box */}
       <div className="bg-white rounded-2xl p-6 flex flex-col items-center justify-center min-h-[100px] border-4 border-black shadow-xl">
-        <div className="text-gray-600 text-sm text-center">{t('host.lobby.websiteUrl')}</div>
+        <div className="text-gray-600 text-sm text-center">Website URL</div>
         <div className="text-3xl font-bold text-black text-center break-all">{websiteUrl}</div>
       </div>
 
       {/* PIN Box */}
       <div className="bg-white rounded-2xl p-6 flex flex-col items-center justify-center min-h-[100px] border-4 border-black shadow-xl">
-        <div className="text-gray-600 text-sm">{t('host.lobby.gamePin')}</div>
+        <div className="text-gray-600 text-sm">Game PIN</div>
         <div className="text-5xl font-bold text-black">{pin}</div>
       </div>
 

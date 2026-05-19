@@ -2,7 +2,6 @@
 
 import { Clock } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
-import { useTranslation } from 'react-i18next';
 import { getGradient, accent } from '@/lib/palette';
 import HostAnsweringScreen from '@/components/host-screens/HostAnsweringScreen';
 import PlayerAnsweringScreen from '@/components/player-screens/PlayerAnsweringScreen';
@@ -58,7 +57,6 @@ export default function GameAnsweringPhaseScreen({
   onSubmitAnswer,
   hasAnswered
 }: GameAnsweringPhaseScreenProps) {
-  const { t } = useTranslation();
   const showOnPlayers = game?.settings.showQuestionOnPlayers ?? true;
 
   // If player has answered, show full-screen waiting screen (no timer or container)
@@ -75,7 +73,7 @@ export default function GameAnsweringPhaseScreen({
             <Clock className="w-8 h-8 text-black" />
           </div>
           <p className="text-gray-600 text-lg">
-            {isHost ? t('screens.answering.hostLabel') : t('screens.answering.playerLabel')}
+            {isHost ? 'Players are choosing their answers' : 'Choose your answer!'}
           </p>
           <SmoothTimerBar
             totalSeconds={game?.settings.answerTime || 30}

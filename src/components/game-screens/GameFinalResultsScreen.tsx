@@ -2,7 +2,6 @@
 
 import { useState } from 'react';
 import { LogOut, Download, Share2, Check } from 'lucide-react';
-import { useTranslation } from 'react-i18next';
 import PageLayout from '@/components/PageLayout';
 import Card from '@/components/Card';
 import Leaderboard from '@/components/Leaderboard';
@@ -21,7 +20,6 @@ export default function GameFinalResultsScreen({
   onDownloadLogs,
   gameId
 }: GameFinalResultsScreenProps) {
-  const { t } = useTranslation();
   const [shareCopied, setShareCopied] = useState(false);
 
   const handleShareResults = async () => {
@@ -51,14 +49,14 @@ export default function GameFinalResultsScreen({
         ]
       : []),
     {
-      text: t('screens.finalLeaderboard.downloadLogs'),
+      text: 'Download Game Logs',
       onClick: onDownloadLogs,
       icon: Download,
       iconPosition: 'left' as const,
       variant: 'primary' as const
     },
     {
-      text: t('screens.finalLeaderboard.backToHome'),
+      text: 'Back to Home',
       onClick: () => window.location.href = '/',
       icon: LogOut,
       iconPosition: 'right' as const,
@@ -68,7 +66,7 @@ export default function GameFinalResultsScreen({
 
   const playerButtons = [
     {
-      text: t('screens.finalLeaderboard.backToHome'),
+      text: 'Back to Home',
       onClick: () => window.location.href = '/',
       icon: LogOut,
       iconPosition: 'right' as const
@@ -81,8 +79,8 @@ export default function GameFinalResultsScreen({
         <Card>
           <Leaderboard
             players={finalScores}
-            title={t('screens.finalLeaderboard.title')}
-            subtitle={t('screens.finalLeaderboard.subtitle')}
+            title="Final Leaderboard"
+            subtitle="Game is now over!"
             buttons={hostButtons}
           />
         </Card>
@@ -90,8 +88,8 @@ export default function GameFinalResultsScreen({
         <Card>
           <Leaderboard
             players={finalScores}
-            title={t('screens.finalLeaderboard.title')}
-            subtitle={t('screens.finalLeaderboard.subtitle')}
+            title="Final Leaderboard"
+            subtitle="Game is now over!"
             buttons={playerButtons}
             showIcon={false}
           />

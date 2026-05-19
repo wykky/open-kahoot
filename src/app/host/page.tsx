@@ -3,7 +3,6 @@
 export const dynamic = 'force-dynamic';
 
 import { useState, useEffect } from 'react';
-import { useTranslation } from 'react-i18next';
 import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import { v4 as uuidv4 } from 'uuid';
@@ -25,7 +24,6 @@ const ACTIVE_HOST_GAME_KEY = 'atenu_live_active_host_game';
 const ACTIVE_GAME_STALE_MS = 10 * 60 * 1000; // pointer older than 10 min is discarded
 
 export default function HostPage() {
-  const { t } = useTranslation();
   const { data: session } = useSession();
   const dbUserId = ((session?.user as { dbUserId?: string } | undefined)?.dbUserId) ?? null;
   const [questions, setQuestions] = useState<Question[]>([]);
@@ -41,7 +39,7 @@ export default function HostPage() {
 
   const { clearNavigationFlag } = useBeforeUnload({
     enabled: questions.length > 0,
-    message: t('host.quizCreation.unsavedWarning'),
+    message: 'You have unsaved questions in your quiz. Are you sure you want to leave?',
   });
 
   // Resume detection — runs once on mount
@@ -208,9 +206,7 @@ export default function HostPage() {
     } catch (error) {
       console.error('Import error:', error);
       alert(
-        t('host.quizCreation.errorImporting', {
-          error: error instanceof Error ? error.message : 'Unknown error',
-        })
+        `Error importing file: ${error instanceof Error ? error.message : 'Unknown error'}`
       );
       event.target.value = '';
     }
@@ -228,9 +224,7 @@ export default function HostPage() {
     } catch (error) {
       console.error('Append error:', error);
       alert(
-        t('host.quizCreation.errorAppending', {
-          error: error instanceof Error ? error.message : 'Unknown error',
-        })
+        `Error appending file: ${error instanceof Error ? error.message : 'Unknown error'}`
       );
       event.target.value = '';
     }
@@ -280,7 +274,7 @@ export default function HostPage() {
   const createGame = () => {
     if (questions.length === 0) return;
     const socket = getSocket();
-    const title = t('host.quizCreation.defaultTitle');
+    const title = 'Quiz Game';
     socket.emit('createGame', title, questions, gameSettings, dbUserId, (createdGame: Game, token: string) => {
       setGame(createdGame);
       setHostToken(token);
@@ -319,7 +313,7 @@ export default function HostPage() {
 
   const downloadTSV = () => {
     if (questions.length === 0) {
-      alert(t('host.quizCreation.noQuestionsToExport'));
+      alert('There are no questions to export.');
       return;
     }
     const tsvContent = Papa.unparse(
@@ -363,8 +357,8 @@ export default function HostPage() {
         body: JSON.stringify({ subject, language, questionCount }),
       });
       const data = await response.json();
-      if (!response.ok) throw new Error(data.error || t('host.quizCreation.failedToGenerate'));
-      if (!data.success || !data.questions) throw new Error(t('host.quizCreation.failedToGenerate'));
+      if (!response.ok) throw new Error(data.error || 'Failed to generate questions');
+      if (!data.success || !data.questions) throw new Error('Failed to generate questions');
       const newQuestions: Question[] = data.questions.map((q: {
         question: string; correct: string; wrong1: string; wrong2: string; wrong3: string; explanation?: string;
       }) => {
@@ -381,13 +375,11 @@ export default function HostPage() {
         };
       });
       setQuestions([...questions, ...newQuestions]);
-      alert(t('host.quizCreation.successGenerated', { count: newQuestions.length }));
+      alert(`Successfully generated ${newQuestions.length} questions!`);
     } catch (error) {
       console.error('Error generating questions:', error);
       alert(
-        t('host.quizCreation.errorGenerating', {
-          error: error instanceof Error ? error.message : t('host.quizCreation.failedToGenerate'),
-        })
+        `Error: ${error instanceof Error ? error.message : 'Failed to generate questions'}`
       );
     }
   };

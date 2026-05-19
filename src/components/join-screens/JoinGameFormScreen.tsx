@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useTranslation } from 'react-i18next';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { LogIn, Lock, Dice6 } from 'lucide-react';
 import { useSession } from 'next-auth/react';
@@ -16,7 +15,6 @@ const PLAYER_ID_KEY = (pin: string) => `player_id_${pin}`;
 const PLAYER_TOKEN_KEY = (pin: string) => `player_token_${pin}`;
 
 export default function JoinGameFormScreen() {
-  const { t } = useTranslation();
   const { data: session } = useSession();
   const dbUserId = ((session?.user as { dbUserId?: string } | undefined)?.dbUserId) ?? null;
   const [pin, setPin] = useState('');
@@ -83,9 +81,9 @@ export default function JoinGameFormScreen() {
               localStorage.removeItem(PLAYER_ID_KEY(pin));
               localStorage.removeItem(PLAYER_TOKEN_KEY(pin));
             } catch {}
-            setError(t('join.error.gameNotFound'));
+            setError('Game not found or already started. Please check the PIN and try again.');
           } else {
-            setError(t('join.error.gameNotFound'));
+            setError('Game not found or already started. Please check the PIN and try again.');
           }
         }
       }
@@ -120,7 +118,7 @@ export default function JoinGameFormScreen() {
     <Card className="w-full max-w-md">
       <form onSubmit={handleSubmit} className="space-y-6">
         <Input
-          label={t('join.gamePin')}
+          label="Game PIN"
           type="tel"
           inputMode="numeric"
           value={pin}
@@ -141,18 +139,18 @@ export default function JoinGameFormScreen() {
         />
 
         <Input
-          label={t('join.yourName')}
+          label="Your Name"
           type="text"
           value={playerName}
           onChange={(e) => {
             setPlayerName(e.target.value.slice(0, 20));
             setError('');
           }}
-          placeholder={t('join.namePlaceholder')}
+          placeholder="Enter your name..."
           maxLength={20}
           actionButton={
             featureConfig.showRandomNickname
-              ? { icon: Dice6, onClick: generateRandomNickname, title: t('join.generateNickname') }
+              ? { icon: Dice6, onClick: generateRandomNickname, title: 'Generate random nickname' }
               : undefined
           }
         />
@@ -172,7 +170,7 @@ export default function JoinGameFormScreen() {
           loading={isJoining}
           icon={LogIn}
         >
-          {t('join.joinGame')}
+          Join Game
         </Button>
       </form>
     </Card>

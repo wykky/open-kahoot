@@ -1,6 +1,5 @@
 'use client';
 
-import { useTranslation } from 'react-i18next';
 import Link from 'next/link';
 import { MonitorCog, MonitorPlay } from 'lucide-react';
 import PageLayout from '@/components/PageLayout';
@@ -8,11 +7,9 @@ import Hero from '@/components/Hero';
 import ActionCard from '@/components/ActionCard';
 
 export default function Home() {
-  const { t } = useTranslation();
-
   return (
     <PageLayout gradient="home" showLogo={false}>
-      <Hero title={t('home.title')} />
+      <Hero title="Atenu Live" />
 
       {/* Action Cards */}
       <div className="max-w-4xl mx-auto grid md:grid-cols-2 gap-8">
@@ -20,17 +17,17 @@ export default function Home() {
           href="/join"
           icon={MonitorPlay}
           variant="join"
-          title={t('home.play.title')}
-          description={t('home.play.description')}
-          buttonText={t('home.play.button')}
+          title="Play"
+          description="Enter a game pin to join an existing quiz and compete with other players"
+          buttonText="Play →"
         />
         <ActionCard
           href="/host"
           icon={MonitorCog}
           variant="host"
-          title={t('home.host.title')}
-          description={t('home.host.description')}
-          buttonText={t('home.host.button')}
+          title="Host"
+          description="Create your own quiz with custom questions and let players join with a game pin"
+          buttonText="Host →"
         />
       </div>
 

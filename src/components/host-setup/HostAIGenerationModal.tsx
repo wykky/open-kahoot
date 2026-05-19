@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import { useTranslation } from 'react-i18next';
 import { Sparkles } from 'lucide-react';
 import Button from '@/components/Button';
 import Input from '@/components/Input';
@@ -19,7 +18,6 @@ export default function HostAIGenerationModal({
   onClose,
   onGenerateQuestions
 }: HostAIGenerationModalProps) {
-  const { t } = useTranslation();
   const [subject, setSubject] = useState('');
   const [language, setLanguage] = useState<'english' | 'french'>('english');
   const [questionCount, setQuestionCount] = useState(5);
@@ -32,7 +30,7 @@ export default function HostAIGenerationModal({
 
   const handleGenerate = async () => {
     if (!subject.trim()) {
-      alert(t('host.aiModal.errorSubject'));
+      alert('Please enter a subject for the quiz.');
       return;
     }
 
@@ -54,15 +52,15 @@ export default function HostAIGenerationModal({
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={handleClose} title={t('host.aiModal.title')}>
+    <Modal isOpen={isOpen} onClose={handleClose} title="AI Quiz Generation">
       <p className="text-gray-600 text-sm mb-6">
-        {t('host.aiModal.description')}
+        Let AI create quiz questions for you! Select a language and enter a subject.
       </p>
 
       <div className="space-y-4">
         <div className="space-y-2">
           <label className="block text-black text-sm font-medium">
-            {t('host.aiModal.language')}
+            Language
           </label>
           <select
             value={language}
@@ -70,13 +68,13 @@ export default function HostAIGenerationModal({
             disabled={isGenerating}
             className={`w-full px-4 py-3 rounded-lg bg-white border border-gray-300 text-black focus:outline-none focus:ring-2 ${accent.ringFocus} ${accent.borderFocus} cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed [&>option]:text-black [&>option]:bg-white`}
           >
-            <option value="english">{t('host.aiModal.english')}</option>
-            <option value="french">{t('host.aiModal.french')}</option>
+            <option value="english">English</option>
+            <option value="french">Français</option>
           </select>
         </div>
 
         <Input
-          label={t('host.aiModal.subject')}
+          label="Subject"
           placeholder={subjectPlaceholders[language]}
           value={subject}
           onChange={(e) => setSubject(e.target.value)}
@@ -85,7 +83,7 @@ export default function HostAIGenerationModal({
 
         <div className="space-y-2">
           <label className="block text-black text-sm font-medium">
-            {t('host.aiModal.numberOfQuestions')}
+            Number of Questions
           </label>
           <input
             type="number"
@@ -107,13 +105,13 @@ export default function HostAIGenerationModal({
             size="md"
             icon={Sparkles}
           >
-            {isGenerating ? t('host.aiModal.generating') : t('host.aiModal.generateQuestions')}
+            {isGenerating ? 'Generating...' : 'Generate Questions'}
           </Button>
         </div>
       </div>
 
       <p className="text-gray-500 text-sm mt-4 text-center">
-        {t('host.aiModal.warning')}
+        ⚠️ AI-generated content may contain inaccuracies. Please review and verify all questions before use.
       </p>
     </Modal>
   );

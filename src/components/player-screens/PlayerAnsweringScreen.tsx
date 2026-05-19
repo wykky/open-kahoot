@@ -1,6 +1,5 @@
 'use client';
 
-import { useTranslation } from 'react-i18next';
 import { getChoiceColor } from '@/lib/palette';
 import type { Question } from '@/types/game';
 
@@ -18,7 +17,6 @@ export default function PlayerAnsweringScreen({
   onSubmitAnswer,
   question
 }: PlayerAnsweringScreenProps) {
-  const { t } = useTranslation();
   const showQuestion = !!question;
 
   return (
@@ -64,7 +62,7 @@ export default function PlayerAnsweringScreen({
         <>
           {/* Classroom mode — shape + letter, no option text (question is on the host screen) */}
           <h2 className="text-3xl text-black text-center mb-8 font-subtitle">
-            {t('screens.answering.playerTitle')}
+            Choose your answer:
           </h2>
           <div className="grid grid-cols-2 gap-4 flex-1">
             {CHOICE_LETTERS.map((letter, index) => (

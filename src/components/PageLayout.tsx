@@ -1,7 +1,6 @@
 import { gradients } from '@/lib/palette';
 import Link from 'next/link';
 import { Trophy } from 'lucide-react';
-import LanguageSelector from './LanguageSelector';
 import UserMenu from './UserMenu';
 
 interface PageLayoutProps {
@@ -53,7 +52,6 @@ export default function PageLayout({
           <Trophy className="w-4 h-4" />
         </Link>
         <UserMenu />
-        <LanguageSelector />
       </div>
       <div className={`container mx-auto ${maxWidthClasses[maxWidth]} ${centerVertically ? '' : 'flex-1'}`}>
         {showLogo && (
