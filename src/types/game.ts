@@ -58,6 +58,7 @@ export interface Player {
   isHost: boolean;
   currentAnswer?: number;
   answerTime?: number;
+  perceivedResponseMs?: number; // Phase 8: client-reported time-to-click, used for adaptive scoring
   isConnected: boolean; // Track connection status
   hasDyslexiaSupport?: boolean; // New field for dyslexia support
 }
@@ -158,7 +159,8 @@ export interface ClientToServerEvents {
     answerIndex: number,
     persistentId: string,
     playerToken: string,
-    qEpoch?: number
+    qEpoch?: number,
+    clientPerceivedMs?: number
   ) => void;
   nextQuestion: (gameId: string, hostToken: string) => void;
   showLeaderboard: (gameId: string, hostToken: string) => void;

@@ -93,9 +93,7 @@ export default function HostPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Will be wired to a UI button in a follow-up. Exposed via `window` for now so it's reachable from DevTools if a host needs to discard a stale session without UI.
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const _discardActiveGame = () => {
+  const discardActiveGame = () => {
     if (!confirm('Discard the current game and start fresh? Players will be disconnected.')) return;
     if (game && hostToken) {
       try { getSocket().emit('endGame', game.id, hostToken); } catch {}
@@ -391,12 +389,21 @@ export default function HostPage() {
 
   if (game) {
     return (
-      <HostGameLobbyScreen
-        game={game}
-        joinUrl={getJoinUrl()}
-        onStartGame={startGame}
-        onToggleDyslexiaSupport={toggleDyslexiaSupport}
-      />
+      <>
+        <HostGameLobbyScreen
+          game={game}
+          joinUrl={getJoinUrl()}
+          onStartGame={startGame}
+          onToggleDyslexiaSupport={toggleDyslexiaSupport}
+        />
+        <button
+          onClick={discardActiveGame}
+          aria-label="End this game and start a new quiz"
+          className="fixed bottom-4 left-4 z-50 px-3 py-2 bg-black/80 text-white text-xs rounded-lg shadow-lg hover:bg-black backdrop-blur-sm"
+        >
+          End game & start new
+        </button>
+      </>
     );
   }
 

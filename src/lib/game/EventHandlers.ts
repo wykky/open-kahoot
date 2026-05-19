@@ -50,8 +50,8 @@ export class EventHandlers {
           this.gameplayLoop.startGameLoop(game);
         });
       });
-      socket.on('submitAnswer', (gameId, questionId, answerIndex, persistentId, playerToken, qEpoch) => {
-        this.handleSubmitAnswer(socket, gameId, questionId, answerIndex, persistentId, playerToken, qEpoch);
+      socket.on('submitAnswer', (gameId, questionId, answerIndex, persistentId, playerToken, qEpoch, clientPerceivedMs) => {
+        this.handleSubmitAnswer(socket, gameId, questionId, answerIndex, persistentId, playerToken, qEpoch, clientPerceivedMs);
       });
       socket.on('nextQuestion', (gameId, hostToken) => {
         this.handleHostEvent(socket, gameId, hostToken, 'nextQuestion', (game) => {
@@ -351,7 +351,8 @@ export class EventHandlers {
     answerIndex: number,
     persistentId: string,
     playerToken: string,
-    qEpoch?: number
+    qEpoch?: number,
+    clientPerceivedMs?: number
   ): void {
     const err = validateSubmitAnswerPayload(gameId, questionId, answerIndex, persistentId);
     if (err) {
@@ -385,7 +386,15 @@ export class EventHandlers {
         return;
       }
 
-      const success = this.playerManager.submitAnswer(game, persistentId, answerIndex, true);
+      const success = this.playerManager.submitAnswer(
+        game,
+        persistentId,
+        answerIndex,
+        true,
+        typeof clientPerceivedMs === 'number' && Number.isFinite(clientPerceivedMs) && clientPerceivedMs >= 0
+          ? Math.min(clientPerceivedMs, game.settings.answerTime * 1000)
+          : undefined
+      );
       if (success) {
         this.gameManager.markActive(game.id); // Phase 5: idle GC
         this.io.to(game.id).emit('playerAnswered', player.id);

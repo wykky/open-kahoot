@@ -129,7 +129,13 @@ export class PlayerManager {
     return p?.isHost ?? false;
   }
 
-  submitAnswer(game: Game, playerId: string, answerIndex: number, isPersistentId: boolean = false): boolean {
+  submitAnswer(
+    game: Game,
+    playerId: string,
+    answerIndex: number,
+    isPersistentId: boolean = false,
+    clientPerceivedMs?: number
+  ): boolean {
     const player = isPersistentId
       ? this.getPlayerById(playerId, game)
       : this.getPlayerBySocketId(playerId, game);
@@ -137,6 +143,9 @@ export class PlayerManager {
     if (player.currentAnswer !== undefined) return false; // no double answers
     player.currentAnswer = answerIndex;
     player.answerTime = Date.now();
+    if (typeof clientPerceivedMs === 'number' && clientPerceivedMs >= 0) {
+      player.perceivedResponseMs = clientPerceivedMs; // Phase 8: adaptive scoring input
+    }
     return true;
   }
 
@@ -194,19 +203,33 @@ export class PlayerManager {
 
   updateScores(game: Game, correctAnswer: number): void {
     const questionStartTime = game.questionStartTime || Date.now();
+    const answerTimeLimit = game.settings.answerTime * 1000;
     const maxPoints = 1000;
+    // Phase 8: adaptive scoring — use client's perceived time if plausible (within 2s of server-received)
+    const TRUST_WINDOW_MS = 2000;
+
     game.players.forEach((player) => {
       if (!player.isHost && player.currentAnswer === correctAnswer) {
-        const responseTime = (player.answerTime || Date.now()) - questionStartTime;
-        const answerTimeLimit = game.settings.answerTime * 1000;
-        const timeUsedRatio = Math.max(0, Math.min(1, responseTime / answerTimeLimit));
+        const serverResponseMs = (player.answerTime || Date.now()) - questionStartTime;
+        let scoringResponseMs = serverResponseMs;
+
+        if (
+          typeof player.perceivedResponseMs === 'number' &&
+          player.perceivedResponseMs >= 0 &&
+          Math.abs(serverResponseMs - player.perceivedResponseMs) <= TRUST_WINDOW_MS
+        ) {
+          // Client time looks honest — give them the network-latency credit
+          scoringResponseMs = player.perceivedResponseMs;
+        }
+
+        const timeUsedRatio = Math.max(0, Math.min(1, scoringResponseMs / answerTimeLimit));
         let adjusted = timeUsedRatio;
         if (player.hasDyslexiaSupport) adjusted = timeUsedRatio * 0.8;
         const pointsEarned = Math.max(0, Math.round(maxPoints * (1 - adjusted)));
         player.score += pointsEarned;
         const supportStatus = player.hasDyslexiaSupport ? ' (with dyslexia support)' : '';
-        console.log(`[PIN ${game.pin}] ${player.name} +${pointsEarned}${supportStatus} | Total: ${player.score}`);
-        // Phase 4: persist running score
+        const usedClient = scoringResponseMs !== serverResponseMs;
+        console.log(`[PIN ${game.pin}] ${player.name} +${pointsEarned}${supportStatus}${usedClient ? ' [client-time]' : ''} | Total: ${player.score}`);
         try { updatePlayerScore(game.id, player.id, player.score); } catch (e) { console.error('[db] updatePlayerScore failed:', e); }
       }
     });

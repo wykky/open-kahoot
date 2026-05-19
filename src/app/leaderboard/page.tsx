@@ -33,6 +33,23 @@ function correctPct(e: LeaderboardEntry): string {
   return `${Math.round((e.correct_count / e.total_answers) * 100)}%`;
 }
 
+/**
+ * Phase 8: tie-aware competition ranking.
+ * Players with the same total_points share the same rank; the next distinct score skips ahead
+ * (e.g., 1, 1, 3, 4, 5, 5, 7). Entries must arrive pre-sorted by total_points DESC.
+ */
+function withCompetitionRanks(entries: LeaderboardEntry[]): Array<LeaderboardEntry & { rank: number }> {
+  let lastRank = 0;
+  let lastScore = Number.POSITIVE_INFINITY;
+  return entries.map((e, idx) => {
+    if (e.total_points !== lastScore) {
+      lastRank = idx + 1;
+      lastScore = e.total_points;
+    }
+    return { ...e, rank: lastRank };
+  });
+}
+
 export default async function LeaderboardPage({
   searchParams,
 }: {
@@ -42,7 +59,7 @@ export default async function LeaderboardPage({
   const rawRange = (sp.range as Range) || 'all';
   const range: Range = rawRange === 'week' || rawRange === 'month' ? rawRange : 'all';
   const sinceTs = rangeToSinceTs(range);
-  const entries = getLeaderboard({ sinceTs, limit: 50 });
+  const entries = withCompetitionRanks(getLeaderboard({ sinceTs, limit: 50 }));
 
   return (
     <PageLayout gradient="leaderboard" maxWidth="2xl">
@@ -86,10 +103,10 @@ export default async function LeaderboardPage({
                 </tr>
               </thead>
               <tbody>
-                {entries.map((e, idx) => (
+                {entries.map((e) => (
                   <tr key={e.user_id} className="border-b border-gray-200 hover:bg-yellow-50">
                     <td className="py-3 pr-2 font-bold">
-                      {idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : idx + 1}
+                      {e.rank === 1 ? '🥇' : e.rank === 2 ? '🥈' : e.rank === 3 ? '🥉' : e.rank}
                     </td>
                     <td className="py-3 pr-2 flex items-center gap-2">
                       {e.avatar_url ? (

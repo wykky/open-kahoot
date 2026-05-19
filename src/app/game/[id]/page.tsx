@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useReducer } from 'react';
+import { useEffect, useReducer, useRef } from 'react';
 import { useParams, useSearchParams, useRouter } from 'next/navigation';
 import { useTranslation } from 'react-i18next';
 import { getSocket } from '@/lib/socket-client';
@@ -153,6 +153,9 @@ export default function GamePage() {
   const isPlayer = searchParams?.get('player') === 'true';
 
   const [state, dispatch] = useReducer(gameReducer, initialState);
+  // Phase 8: client-side timestamp of when the current answering phase started (locally).
+  // Used to report perceived time on submit for adaptive scoring.
+  const answeringPhaseStartedAtRef = useRef<number | null>(null);
 
   useEffect(() => {
     const socket = getSocket();
@@ -225,9 +228,10 @@ export default function GamePage() {
     socket.on('thinkingPhase', (question: Question, thinkTime: number, deadline?: PhaseDeadline) =>
       dispatch({ type: 'START_THINKING_PHASE', payload: { question, thinkTime, deadline } })
     );
-    socket.on('answeringPhase', (answerTime: number, deadline?: PhaseDeadline) =>
-      dispatch({ type: 'START_ANSWERING_PHASE', payload: { answerTime, deadline } })
-    );
+    socket.on('answeringPhase', (answerTime: number, deadline?: PhaseDeadline) => {
+      answeringPhaseStartedAtRef.current = Date.now(); // Phase 8: local clock at phase start
+      dispatch({ type: 'START_ANSWERING_PHASE', payload: { answerTime, deadline } });
+    });
     socket.on('questionEnded', () => dispatch({ type: 'WAITING_FOR_RESULTS' }));
     socket.on('personalResult', (result: PersonalResult) =>
       dispatch({ type: 'PERSONAL_RESULT', payload: result })
@@ -303,6 +307,11 @@ export default function GamePage() {
       return;
     }
     const socket = getSocket();
+    // Phase 8: client-perceived time elapsed since answering phase started locally
+    const clientPerceivedMs =
+      answeringPhaseStartedAtRef.current != null
+        ? Math.max(0, Date.now() - answeringPhaseStartedAtRef.current)
+        : undefined;
     socket.emit(
       'submitAnswer',
       gameId,
@@ -310,7 +319,8 @@ export default function GamePage() {
       answerIndex,
       persistentId,
       playerToken,
-      state.qEpoch ?? undefined
+      state.qEpoch ?? undefined,
+      clientPerceivedMs
     );
   };
 
