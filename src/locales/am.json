@@ -16,6 +16,13 @@
       "github": "ምንጭ ኮድ ይመልከቱ"
     }
   },
+  "userMenu": {
+    "loading": "በመጫን ላይ",
+    "signIn": "ግባ",
+    "signOut": "ውጣ",
+    "myQuizzes": "የእኔ ጥያቄዎች",
+    "userFallback": "ተጠቃሚ"
+  },
   "join": {
     "loading": "በመጫን ላይ...",
     "gamePin": "የጨዋታ ፒን",
@@ -86,6 +93,25 @@
       "websiteUrl": "የድረ-ገጽ URL",
       "gamePin": "የጨዋታ ፒን"
     }
+  },
+  "hostHistory": {
+    "title": "የእኔ ጥያቄዎች",
+    "newQuiz": "+ አዲስ ጥያቄ",
+    "emptyMessage": "እስካሁን ያስኬዱት ጥያቄ የለም።",
+    "emptyCta": "የመጀመሪያ ጥያቄዎን ይፍጠሩ",
+    "colTitle": "ርዕስ",
+    "colPin": "ፒን",
+    "colDate": "ቀን",
+    "colPlayers": "ተጫዋቾች",
+    "colQuestions": "ጥያቄዎች",
+    "colStatus": "ሁኔታ",
+    "colTsv": "TSV",
+    "download": "አውርድ",
+    "statusFinished": "ተጠናቋል",
+    "statusWaiting": "በመጠባበቅ",
+    "statusInProgress": "በመካሄድ",
+    "footerNote_one": "የቅርብ ጊዜ {{count}} ጥያቄዎ ይታያል። ያልጀመሩ ረቂቆች የሉም።",
+    "footerNote_other": "የቅርብ ጊዜ {{count}} ጥያቄዎቹ ይታያሉ። ያልጀመሩ ረቂቆች የሉም።"
   },
   "screens": {
     "kicked": {

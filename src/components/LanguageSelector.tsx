@@ -29,6 +29,12 @@ export default function LanguageSelector() {
 
   const change = (code: string) => {
     i18n.changeLanguage(code);
+    // Mirror to a cookie so server components (host/history etc.) pick up the same
+    // locale. i18next-browser-languagedetector also writes it but be explicit for
+    // SameSite + path correctness across the whole app.
+    if (typeof document !== 'undefined') {
+      document.cookie = `atenu-locale=${code}; path=/; max-age=${60 * 60 * 24 * 365}; SameSite=Lax`;
+    }
     setOpen(false);
   };
 

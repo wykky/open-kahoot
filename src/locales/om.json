@@ -16,6 +16,13 @@
       "github": "Koodii madda ilaali"
     }
   },
+  "userMenu": {
+    "loading": "Fe'aa jira",
+    "signIn": "Seeni",
+    "signOut": "Baʼi",
+    "myQuizzes": "Gaaffilee koo",
+    "userFallback": "Fayyadamaa"
+  },
   "join": {
     "loading": "Fe'amaa jira...",
     "gamePin": "PIN taphaa",
@@ -86,6 +93,25 @@
       "websiteUrl": "URL Marsariitii",
       "gamePin": "PIN taphaa"
     }
+  },
+  "hostHistory": {
+    "title": "Gaaffilee koo",
+    "newQuiz": "+ Gaaffii haaraa",
+    "emptyMessage": "Hanga ammaatti gaaffii hin oofne.",
+    "emptyCta": "Gaaffii kee jalqabaa uumi",
+    "colTitle": "Mata duree",
+    "colPin": "PIN",
+    "colDate": "Guyyaa",
+    "colPlayers": "Taphattoota",
+    "colQuestions": "Gaaffilee",
+    "colStatus": "Haala",
+    "colTsv": "TSV",
+    "download": "Buusi",
+    "statusFinished": "Xumurame",
+    "statusWaiting": "Eegaa jira",
+    "statusInProgress": "Adeemaa jira",
+    "footerNote_one": "Gaaffiin {{count}} dhiyeenya kee mul'isame. Lobbii hin jalqabamne hin agarsiifaman.",
+    "footerNote_other": "Gaaffilee {{count}} dhiyeenya kee mul'isaman. Lobbii hin jalqabamne hin agarsiifaman."
   },
   "screens": {
     "kicked": {

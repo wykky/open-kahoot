@@ -27,8 +27,12 @@ if (!i18n.isInitialized) {
       load: 'languageOnly',
       nonExplicitSupportedLngs: true,
       detection: {
-        order: ['localStorage', 'navigator', 'htmlTag'],
-        caches: ['localStorage'],
+        // Cookie first so server components (next/headers) can read the same value
+        // the client picked. localStorage stays as a fallback for older sessions.
+        order: ['cookie', 'localStorage', 'navigator', 'htmlTag'],
+        caches: ['cookie', 'localStorage'],
+        lookupCookie: 'atenu-locale',
+        cookieMinutes: 60 * 24 * 365, // 1 year
       },
       interpolation: {
         escapeValue: false,

@@ -16,6 +16,13 @@
       "github": "View on GitHub"
     }
   },
+  "userMenu": {
+    "loading": "Loading",
+    "signIn": "Sign in",
+    "signOut": "Sign Out",
+    "myQuizzes": "My quizzes",
+    "userFallback": "User"
+  },
   "join": {
     "loading": "Loading...",
     "gamePin": "Game PIN",
@@ -86,6 +93,25 @@
       "websiteUrl": "Website URL",
       "gamePin": "Game PIN"
     }
+  },
+  "hostHistory": {
+    "title": "My quizzes",
+    "newQuiz": "+ New quiz",
+    "emptyMessage": "You haven't run any quizzes yet.",
+    "emptyCta": "Create your first quiz",
+    "colTitle": "Title",
+    "colPin": "PIN",
+    "colDate": "Date",
+    "colPlayers": "Players",
+    "colQuestions": "Qs",
+    "colStatus": "Status",
+    "colTsv": "TSV",
+    "download": "Download",
+    "statusFinished": "Finished",
+    "statusWaiting": "Waiting",
+    "statusInProgress": "In progress",
+    "footerNote_one": "Showing your most recent {{count}} quiz. Draft lobbies that were never started are hidden.",
+    "footerNote_other": "Showing your most recent {{count}} quizzes. Draft lobbies that were never started are hidden."
   },
   "screens": {
     "kicked": {
