@@ -48,6 +48,9 @@ export interface Game {
   lastActivityAt?: number; // Updated on any meaningful event — used by idle-game GC
   qEpoch?: number; // Phase 6: bumps on each thinking/answering phase entry; used to reject stale answers
   answerDeadlineMs?: number; // Phase 6: server-side deadline incl. grace; for late-answer acceptance
+  // Question indices already passed through PlayerManager.updateScores. Makes updateScores
+  // idempotent so we can call it defensively from executeFinishedPhase without double-credit.
+  scoredQuestions?: number[];
 }
 
 export interface Player {
@@ -61,6 +64,13 @@ export interface Player {
   perceivedResponseMs?: number; // Phase 8: client-reported time-to-click, used for adaptive scoring
   isConnected: boolean; // Track connection status
   hasDyslexiaSupport?: boolean; // New field for dyslexia support
+  // Cached per-question points. Set once by PlayerManager.updateScores; read by
+  // storeAnswersToHistory (TSV row) and getPersonalResult (player's "+X" toast).
+  // Cleared in clearAnswers between questions.
+  lastPointsEarned?: number;
+  // Phase 8+ tie-aware competition rank (1,1,3,4,5,5,7). Set server-side before
+  // leaderboardShown / gameFinished emits. Clients should prefer this over array index.
+  rank?: number;
 }
 
 export interface GameStats {

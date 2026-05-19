@@ -68,7 +68,7 @@ export default function Leaderboard({
           >
             <div className="flex items-center gap-4">
               <div className="w-10 h-10 rounded-full flex items-center justify-center bg-black text-yellow-400 font-bold text-lg">
-                {index + 1}
+                {player.rank ?? index + 1}
               </div>
               <div className="text-black font-semibold text-lg">{player.name}</div>
             </div>

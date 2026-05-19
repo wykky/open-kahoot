@@ -1,7 +1,47 @@
 import { v4 as uuidv4 } from 'uuid';
-import type { Game, Player } from '@/types/game';
+import type { Game, Player, Question } from '@/types/game';
 import { issuePlayerToken, verifyPlayerToken } from './tokens';
 import { upsertPlayer, insertAnswer, updatePlayerScore } from '@/lib/db';
+
+// Phase 8: adaptive scoring trust window — accept client-reported time if within 2s of server-measured.
+const TRUST_WINDOW_MS = 2000;
+// Kahoot-style 500-pt floor for correct answers: 1000*(1-r/2) — 1000 at t=0, 500 at deadline.
+// On 3G, this stops penalizing students who answered correctly but slowly into ~0 points territory.
+const MAX_POINTS_PER_QUESTION = 1000;
+// Dyslexia accessibility: reduce the time penalty fraction by 20% before applying the /2 floor.
+const DYSLEXIA_TIME_PENALTY_MULTIPLIER = 0.8;
+
+/**
+ * Canonical scoring math — single source of truth for "how many points did this player
+ * earn on this question". Called once per (player, question) by updateScores. Result is
+ * cached on player.lastPointsEarned so storeAnswersToHistory and getPersonalResult can
+ * read the same number without recomputing (and without drifting from each other).
+ */
+export function computeQuestionPoints(player: Player, game: Game, question: Question): number {
+  if (player.isHost) return 0;
+  if (player.currentAnswer === undefined) return 0;
+  if (player.currentAnswer !== question.correctAnswer) return 0;
+
+  const questionStartTime = game.questionStartTime || Date.now();
+  const answerTimeLimit = game.settings.answerTime * 1000;
+
+  const serverResponseMs = (player.answerTime || Date.now()) - questionStartTime;
+  let scoringResponseMs = serverResponseMs;
+  if (
+    typeof player.perceivedResponseMs === 'number' &&
+    player.perceivedResponseMs >= 0 &&
+    Math.abs(serverResponseMs - player.perceivedResponseMs) <= TRUST_WINDOW_MS
+  ) {
+    scoringResponseMs = player.perceivedResponseMs;
+  }
+
+  const timeUsedRatio = Math.max(0, Math.min(1, scoringResponseMs / answerTimeLimit));
+  const adjusted = player.hasDyslexiaSupport
+    ? timeUsedRatio * DYSLEXIA_TIME_PENALTY_MULTIPLIER
+    : timeUsedRatio;
+
+  return Math.max(0, Math.round(MAX_POINTS_PER_QUESTION * (1 - adjusted / 2)));
+}
 
 export interface JoinGameResult {
   success: boolean;
@@ -154,6 +194,39 @@ export class PlayerManager {
       if (!player.isHost) {
         delete player.currentAnswer;
         delete player.answerTime;
+        delete player.perceivedResponseMs;
+        delete player.lastPointsEarned;
+      }
+    });
+  }
+
+  /**
+   * Canonical scoring step. Idempotent via game.scoredQuestions — safe to call from
+   * executeResultsPhase (the normal path) AND executeFinishedPhase (the safety net for
+   * endGame-from-non-results / idle-GC / host-disconnect-timeout, which otherwise leaves
+   * the final question unscored). Computes points once and caches on player.lastPointsEarned
+   * so storeAnswersToHistory / getPersonalResult read the same number.
+   */
+  updateScores(game: Game, question: Question): void {
+    if (!game.scoredQuestions) game.scoredQuestions = [];
+    if (game.scoredQuestions.includes(game.currentQuestionIndex)) return;
+    game.scoredQuestions.push(game.currentQuestionIndex);
+
+    game.players.forEach((player) => {
+      if (player.isHost) return;
+      const pointsEarned = computeQuestionPoints(player, game, question);
+      player.lastPointsEarned = pointsEarned;
+      if (pointsEarned > 0) {
+        player.score += pointsEarned;
+        const supportStatus = player.hasDyslexiaSupport ? ' (with dyslexia support)' : '';
+        const serverResponseMs = (player.answerTime || Date.now()) - (game.questionStartTime || Date.now());
+        const usedClient =
+          typeof player.perceivedResponseMs === 'number' &&
+          player.perceivedResponseMs >= 0 &&
+          Math.abs(serverResponseMs - player.perceivedResponseMs) <= TRUST_WINDOW_MS &&
+          player.perceivedResponseMs !== serverResponseMs;
+        console.log(`[PIN ${game.pin}] ${player.name} +${pointsEarned}${supportStatus}${usedClient ? ' [client-time]' : ''} | Total: ${player.score}`);
+        try { updatePlayerScore(game.id, player.id, player.score); } catch (e) { console.error('[db] updatePlayerScore failed:', e); }
       }
     });
   }
@@ -161,78 +234,56 @@ export class PlayerManager {
   storeAnswersToHistory(game: Game): void {
     const question = game.questions[game.currentQuestionIndex];
     if (!question) return;
-    // Idempotent guard: storeAnswersToHistory fires in both executePreprationPhase AND
-    // executeFinishedPhase. For the last question both paths run — without this guard,
-    // the final question is recorded twice (once with the real answer, once empty after
-    // clearAnswers). Skip if records for this questionIndex already exist.
+    // Idempotent on (game, questionIndex): the natural path calls this once per question
+    // in executePreprationPhase, and executeFinishedPhase also calls it for the final
+    // question. Without the guard, the last question's records double up after clearAnswers
+    // (the second pass sees player.currentAnswer = undefined and writes an empty row).
     if (game.answerHistory.some((r) => r.questionIndex === game.currentQuestionIndex)) {
       return;
     }
     const questionStartTime = game.questionStartTime || Date.now();
 
     game.players.forEach((player) => {
-      if (!player.isHost) {
-        const responseTime = player.answerTime ? player.answerTime - questionStartTime : 0;
-        const wasCorrect = player.currentAnswer === question.correctAnswer;
-        let pointsEarned = 0;
-        if (wasCorrect && player.currentAnswer !== undefined) {
-          const answerTimeLimit = game.settings.answerTime * 1000;
-          const timeUsedRatio = responseTime / answerTimeLimit;
-          let adjusted = timeUsedRatio;
-          if (player.hasDyslexiaSupport) adjusted = timeUsedRatio * 0.8;
-          pointsEarned = Math.max(0, Math.round(1000 * (1 - adjusted)));
-        }
-        const record = {
-          playerId: player.id,
-          playerName: player.name,
-          questionIndex: game.currentQuestionIndex,
-          questionId: question.id,
-          answerIndex: player.currentAnswer ?? null,
-          answerTime: player.answerTime,
-          responseTime,
-          pointsEarned,
-          wasCorrect: wasCorrect && player.currentAnswer !== undefined,
-          hasDyslexiaSupport: player.hasDyslexiaSupport || false,
-        };
-        game.answerHistory.push(record);
-        // Phase 4: persist answer
-        try { insertAnswer(game.id, record); } catch (e) { console.error('[db] insertAnswer failed:', e); }
-      }
+      if (player.isHost) return;
+      const responseTime = player.answerTime ? player.answerTime - questionStartTime : 0;
+      const wasCorrect =
+        player.currentAnswer !== undefined && player.currentAnswer === question.correctAnswer;
+      // Read the canonical points from updateScores. If updateScores didn't run for some
+      // reason (shouldn't happen — executeResultsPhase or executeFinishedPhase always calls
+      // it first), default to 0 rather than recomputing with a different formula.
+      const pointsEarned = player.lastPointsEarned ?? 0;
+      const record = {
+        playerId: player.id,
+        playerName: player.name,
+        questionIndex: game.currentQuestionIndex,
+        questionId: question.id,
+        answerIndex: player.currentAnswer ?? null,
+        answerTime: player.answerTime,
+        responseTime,
+        pointsEarned,
+        wasCorrect,
+        hasDyslexiaSupport: player.hasDyslexiaSupport || false,
+      };
+      game.answerHistory.push(record);
+      try { insertAnswer(game.id, record); } catch (e) { console.error('[db] insertAnswer failed:', e); }
     });
   }
 
-  updateScores(game: Game, correctAnswer: number): void {
-    const questionStartTime = game.questionStartTime || Date.now();
-    const answerTimeLimit = game.settings.answerTime * 1000;
-    const maxPoints = 1000;
-    // Phase 8: adaptive scoring — use client's perceived time if plausible (within 2s of server-received)
-    const TRUST_WINDOW_MS = 2000;
-
-    game.players.forEach((player) => {
-      if (!player.isHost && player.currentAnswer === correctAnswer) {
-        const serverResponseMs = (player.answerTime || Date.now()) - questionStartTime;
-        let scoringResponseMs = serverResponseMs;
-
-        if (
-          typeof player.perceivedResponseMs === 'number' &&
-          player.perceivedResponseMs >= 0 &&
-          Math.abs(serverResponseMs - player.perceivedResponseMs) <= TRUST_WINDOW_MS
-        ) {
-          // Client time looks honest — give them the network-latency credit
-          scoringResponseMs = player.perceivedResponseMs;
-        }
-
-        const timeUsedRatio = Math.max(0, Math.min(1, scoringResponseMs / answerTimeLimit));
-        let adjusted = timeUsedRatio;
-        if (player.hasDyslexiaSupport) adjusted = timeUsedRatio * 0.8;
-        const pointsEarned = Math.max(0, Math.round(maxPoints * (1 - adjusted)));
-        player.score += pointsEarned;
-        const supportStatus = player.hasDyslexiaSupport ? ' (with dyslexia support)' : '';
-        const usedClient = scoringResponseMs !== serverResponseMs;
-        console.log(`[PIN ${game.pin}] ${player.name} +${pointsEarned}${supportStatus}${usedClient ? ' [client-time]' : ''} | Total: ${player.score}`);
-        try { updatePlayerScore(game.id, player.id, player.score); } catch (e) { console.error('[db] updatePlayerScore failed:', e); }
+  /**
+   * Tie-aware competition ranking (1, 1, 3, 4, 5, 5, 7). Mutates `rank` on each player.
+   * Assumes the input list is already sorted by score DESC (use getLeaderboard).
+   */
+  applyCompetitionRanks(players: Player[]): Player[] {
+    let lastRank = 0;
+    let lastScore = Number.POSITIVE_INFINITY;
+    players.forEach((p, idx) => {
+      if (p.score !== lastScore) {
+        lastRank = idx + 1;
+        lastScore = p.score;
       }
+      p.rank = lastRank;
     });
+    return players;
   }
 
   getLeaderboard(game: Game): Player[] {

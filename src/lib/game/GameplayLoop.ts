@@ -234,7 +234,7 @@ export class GameplayLoop {
       console.error(`❌ [PIN ${game.pin}] No current question for results phase`);
       return;
     }
-    this.playerManager.updateScores(game, currentQuestion.correctAnswer);
+    this.playerManager.updateScores(game, currentQuestion);
     const stats = this.questionManager.getQuestionStats(game);
     if (stats) {
       const correctAnswerCount = stats.answers.find(a => a.optionIndex === currentQuestion.correctAnswer)?.count || 0;
@@ -258,20 +258,26 @@ export class GameplayLoop {
   }
 
   private executeLeaderboardPhase(game: Game): void {
-    const leaderboard = this.playerManager.getLeaderboard(game);
+    const leaderboard = this.playerManager.applyCompetitionRanks(this.playerManager.getLeaderboard(game));
     const topPlayer = leaderboard[0] || null;
     console.log(`[PIN ${game.pin}] Leaderboard | Top: ${topPlayer ? `${topPlayer.name} (${topPlayer.score})` : 'none'}`);
     this.io.to(game.id).emit('leaderboardShown', leaderboard, sanitizeGameForClient(game));
   }
 
   private executeFinishedPhase(game: Game): void {
+    // Score the current question if it hasn't been scored yet (idempotent via game.scoredQuestions).
+    // Covers: endGame from non-results phases, idle-GC auto-finish, host-disconnect-timeout. Without
+    // this the final question's points never make it into player.score / players.final_score.
     if (game.currentQuestionIndex >= 0) {
+      const currentQuestion = this.questionManager.getCurrentQuestion(game);
+      if (currentQuestion) {
+        this.playerManager.updateScores(game, currentQuestion);
+      }
       this.playerManager.storeAnswersToHistory(game);
     }
     this.gameManager.updateGamePhase(game.id, 'finished');
-    const finalResults = this.playerManager.getFinalResults(game);
-    const sortedPlayers = [...game.players].filter(p => !p.isHost).sort((a, b) => b.score - a.score);
-    const winner = sortedPlayers[0] || null;
+    const finalResults = this.playerManager.applyCompetitionRanks(this.playerManager.getFinalResults(game));
+    const winner = finalResults[0] || null;
     console.log(`[PIN ${game.pin}] Game finished | Winner: ${winner ? `${winner.name} (${winner.score})` : 'none'}`);
     this.io.to(game.id).emit('gameFinished', finalResults);
     this.stopGameLoop(game.id);
@@ -355,12 +361,12 @@ export class GameplayLoop {
         break;
       }
       case 'leaderboard': {
-        const leaderboard = this.playerManager.getLeaderboard(game);
+        const leaderboard = this.playerManager.applyCompetitionRanks(this.playerManager.getLeaderboard(game));
         this.io.to(socketId).emit('leaderboardShown', leaderboard, sanitizeGameForClient(game));
         break;
       }
       case 'finished': {
-        const finalResults = this.playerManager.getFinalResults(game);
+        const finalResults = this.playerManager.applyCompetitionRanks(this.playerManager.getFinalResults(game));
         this.io.to(socketId).emit('gameFinished', finalResults);
         break;
       }

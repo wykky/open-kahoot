@@ -63,30 +63,15 @@ export class QuestionManager {
   getPersonalResult(game: Game, playerId: string): PersonalResult | undefined {
     const player = game.players.find(p => p.id === playerId);
     const question = this.getCurrentQuestion(game);
-    
+
     if (!player || !question || player.isHost) {
       return undefined;
     }
 
     const wasCorrect = player.currentAnswer === question.correctAnswer;
-    
-    // Calculate points earned for this question
-    let pointsEarned = 0;
-    if (wasCorrect) {
-      const questionStartTime = game.questionStartTime || Date.now();
-      const responseTime = (player.answerTime || Date.now()) - questionStartTime;
-      const answerTimeLimit = game.settings.answerTime * 1000;
-      const maxPoints = 1000;
-      const timeUsedRatio = responseTime / answerTimeLimit;
-      
-      // Apply dyslexia support: 20% slower score reduction
-      let adjustedTimeUsedRatio = timeUsedRatio;
-      if (player.hasDyslexiaSupport) {
-        adjustedTimeUsedRatio = timeUsedRatio * 0.8; // 20% reduction in time penalty
-      }
-      
-      pointsEarned = Math.max(0, Math.round(maxPoints * (1 - adjustedTimeUsedRatio)));
-    }
+    // Canonical: read points cached by PlayerManager.updateScores. Same number as the TSV
+    // row and the score delta on the live leaderboard — no recomputation, no drift.
+    const pointsEarned = player.lastPointsEarned ?? 0;
 
     // Get leaderboard to determine position
     const leaderboard = game.players
