@@ -134,6 +134,44 @@ export class EventHandlers {
         }
         this.handleDownloadGameLogs(socket, gameId, hostToken);
       });
+      socket.on('kickPlayer', (gameId, playerId, hostToken) => {
+        this.handleHostEvent(socket, gameId, hostToken, 'kickPlayer', (game) => {
+          if (typeof playerId !== 'string' || playerId.length === 0 || playerId.length > LIMITS.ID_MAX) {
+            socket.emit('error', 'Invalid playerId');
+            return;
+          }
+          const target = this.playerManager.getPlayerById(playerId, game);
+          if (!target || target.isHost) {
+            socket.emit('error', 'Player not found');
+            return;
+          }
+          // Kick the target's socket if currently connected — they receive 'kicked'
+          // (same UX as the single-session-lock kick).
+          if (target.socketId) {
+            const targetSocket = this.io.sockets.sockets.get(target.socketId);
+            if (targetSocket) {
+              targetSocket.emit('kicked', 'Removed by host');
+              this.gameManager.detachSocket(target.socketId);
+              targetSocket.disconnect(true);
+            }
+          }
+          const removed = this.playerManager.removePlayer(playerId, game);
+          if (removed) {
+            console.log(`[PIN ${game.pin}] Host kicked player ${target.name}`);
+            this.io.to(game.id).emit('playerLeft', playerId);
+          }
+        });
+      });
+      socket.on('skipQuestion', (gameId, hostToken) => {
+        this.handleHostEvent(socket, gameId, hostToken, 'skipQuestion', (game) => {
+          // Only meaningful during thinking or answering — moving to results from any
+          // other phase would either no-op (already past) or scramble the state machine.
+          if (game.phase !== 'thinking' && game.phase !== 'answering') {
+            return;
+          }
+          this.gameplayLoop.transitionToPhase(game, 'results');
+        });
+      });
       socket.on('toggleDyslexiaSupport', (gameId, playerId, hostToken) => {
         this.handleHostEvent(socket, gameId, hostToken, 'toggleDyslexiaSupport', (game) => {
           if (typeof playerId !== 'string' || playerId.length === 0 || playerId.length > LIMITS.ID_MAX) {

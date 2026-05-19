@@ -17,13 +17,15 @@ interface HostGameLobbyScreenProps {
   joinUrl: string;
   onStartGame: () => void;
   onToggleDyslexiaSupport: (playerId: string) => void;
+  onKickPlayer: (playerId: string) => void;
 }
 
-export default function HostGameLobbyScreen({ 
-  game, 
-  joinUrl, 
+export default function HostGameLobbyScreen({
+  game,
+  joinUrl,
   onStartGame,
-  onToggleDyslexiaSupport
+  onToggleDyslexiaSupport,
+  onKickPlayer,
 }: HostGameLobbyScreenProps) {
   const { t } = useTranslation();
   const { startLobbyMusic, stopLobbyMusic, playBlup } = useCountdownMusic();
@@ -98,12 +100,14 @@ export default function HostGameLobbyScreen({
             </Button>
           </div>
           
-          <PlayerList 
+          <PlayerList
             players={playersOnly}
             emptyMessage={t('host.lobby.waitingForPlayers')}
             columns={3}
             showDyslexiaControls={true}
             onToggleDyslexiaSupport={onToggleDyslexiaSupport}
+            showKickControl={true}
+            onKickPlayer={onKickPlayer}
           />
         </div>
       </Card>

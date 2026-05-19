@@ -309,6 +309,12 @@ export default function HostPage() {
     socket.emit('toggleDyslexiaSupport', game.id, playerId, hostToken);
   };
 
+  const kickPlayer = (playerId: string) => {
+    if (!game || !hostToken) return;
+    const socket = getSocket();
+    socket.emit('kickPlayer', game.id, playerId, hostToken);
+  };
+
   const getJoinUrl = () => (game ? `${appConfig.url}/join?pin=${game.pin}` : '');
 
   const downloadTSV = () => {
@@ -394,6 +400,7 @@ export default function HostPage() {
           joinUrl={getJoinUrl()}
           onStartGame={startGame}
           onToggleDyslexiaSupport={toggleDyslexiaSupport}
+          onKickPlayer={kickPlayer}
         />
         <button
           onClick={discardActiveGame}

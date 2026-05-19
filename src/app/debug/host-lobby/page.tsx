@@ -12,6 +12,7 @@ export default function DebugHostLobbyPage() {
       joinUrl={joinUrl}
       onStartGame={() => {}}
       onToggleDyslexiaSupport={() => {}}
+      onKickPlayer={() => {}}
     />
   );
 } 

@@ -1,3 +1,6 @@
+'use client';
+
+import { motion } from 'framer-motion';
 import { Trophy, LucideIcon } from 'lucide-react';
 import type { Player } from '@/types/game';
 import Button from './Button';
@@ -60,10 +63,14 @@ export default function Leaderboard({
         </div>
       )}
 
+      {/* `layout` prop animates row reordering between renders — Kahoot-style "climb"
+          when scores cross. Spring tween gives a satisfying overshoot at the top. */}
       <div className="space-y-3">
         {players.map((player, index) => (
-          <div
+          <motion.div
             key={player.id}
+            layout
+            transition={{ type: 'spring', stiffness: 280, damping: 28 }}
             className="flex items-center justify-between p-4 rounded-xl border-2 border-black bg-white"
           >
             <div className="flex items-center gap-4">
@@ -76,7 +83,7 @@ export default function Leaderboard({
               <div className="text-black font-bold text-xl">{player.score}</div>
               <div className="text-gray-500 text-xs">points</div>
             </div>
-          </div>
+          </motion.div>
         ))}
       </div>
     </div>

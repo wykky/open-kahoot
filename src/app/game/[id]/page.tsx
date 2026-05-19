@@ -16,6 +16,26 @@ import GameWaitingForResultsScreen from '@/components/game-screens/GameWaitingFo
 import GameAnsweringPhaseScreen from '@/components/game-screens/GameAnsweringPhaseScreen';
 import GameResultsPhaseScreen from '@/components/game-screens/GameResultsPhaseScreen';
 import GameFallbackScreen from '@/components/game-screens/GameFallbackScreen';
+import { SkipForward } from 'lucide-react';
+
+/**
+ * Small overlay button rendered on the host's thinking/answering screens.
+ * Skips the rest of the current question and jumps to results — useful when
+ * the host can see everyone has already answered or wants to move on early.
+ */
+function SkipQuestionButton({ onSkip }: { onSkip: () => void }) {
+  return (
+    <button
+      onClick={onSkip}
+      aria-label="Skip question"
+      title="Skip to results"
+      className="fixed bottom-4 right-4 z-50 px-4 py-2 bg-black/80 text-white text-sm rounded-lg shadow-lg hover:bg-black backdrop-blur-sm flex items-center gap-2"
+    >
+      <SkipForward className="w-4 h-4" />
+      Skip
+    </button>
+  );
+}
 
 const HOST_TOKEN_KEY = (gameId: string) => `host_token_${gameId}`;
 const PLAYER_ID_KEY = (pin: string) => `player_id_${pin}`;
@@ -353,6 +373,12 @@ export default function GamePage() {
     socket.emit('downloadGameLogs', gameId, getHostToken());
   };
 
+  const skipQuestion = () => {
+    const socket = getSocket();
+    if (!gameId) return;
+    socket.emit('skipQuestion', gameId, getHostToken());
+  };
+
   if (state.isValidating) return <GameValidationScreen />;
   if (state.gameError) return <GameErrorScreen error={state.gameError} />;
   if (state.gameStatus === 'waiting' || state.gameStatus === 'preparation') {
@@ -379,13 +405,16 @@ export default function GamePage() {
   }
   if (state.gameStatus === 'thinking' && state.phase === 'thinking' && state.currentQuestion) {
     return (
-      <GameThinkingPhaseScreen
-        currentQuestion={state.currentQuestion}
-        timeLeft={state.timeLeft}
-        game={state.game}
-        isHost={isHost}
-        isPlayer={isPlayer}
-      />
+      <>
+        <GameThinkingPhaseScreen
+          currentQuestion={state.currentQuestion}
+          timeLeft={state.timeLeft}
+          game={state.game}
+          isHost={isHost}
+          isPlayer={isPlayer}
+        />
+        {isHost && <SkipQuestionButton onSkip={skipQuestion} />}
+      </>
     );
   }
   if (state.gameStatus === 'waiting-results') {
@@ -393,15 +422,18 @@ export default function GamePage() {
   }
   if (state.gameStatus === 'answering' && state.phase === 'answering' && state.currentQuestion) {
     return (
-      <GameAnsweringPhaseScreen
-        currentQuestion={state.currentQuestion}
-        timeLeft={state.timeLeft}
-        game={state.game}
-        isHost={isHost}
-        isPlayer={isPlayer}
-        onSubmitAnswer={submitAnswer}
-        hasAnswered={state.hasAnswered}
-      />
+      <>
+        <GameAnsweringPhaseScreen
+          currentQuestion={state.currentQuestion}
+          timeLeft={state.timeLeft}
+          game={state.game}
+          isHost={isHost}
+          isPlayer={isPlayer}
+          onSubmitAnswer={submitAnswer}
+          hasAnswered={state.hasAnswered}
+        />
+        {isHost && <SkipQuestionButton onSkip={skipQuestion} />}
+      </>
     );
   }
   if (state.gameStatus === 'results') {

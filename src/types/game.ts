@@ -182,4 +182,6 @@ export interface ClientToServerEvents {
   endGame: (gameId: string, hostToken: string) => void;
   downloadGameLogs: (gameId: string, hostToken: string) => void;
   toggleDyslexiaSupport: (gameId: string, playerId: string, hostToken: string) => void;
+  kickPlayer: (gameId: string, playerId: string, hostToken: string) => void;
+  skipQuestion: (gameId: string, hostToken: string) => void;
 }

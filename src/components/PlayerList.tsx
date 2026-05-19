@@ -1,4 +1,4 @@
-import { Brain } from 'lucide-react';
+import { Brain, X } from 'lucide-react';
 import type { Player } from '@/types/game';
 import { accent } from '@/lib/palette';
 
@@ -10,16 +10,23 @@ interface PlayerListProps {
   columns?: 1 | 2 | 3 | 4;
   showDyslexiaControls?: boolean;
   onToggleDyslexiaSupport?: (playerId: string) => void;
+  // When set, renders a small X button in the corner of each tile that calls
+  // onKickPlayer after host-side confirm. Lobby use only — kicking mid-game is
+  // server-supported but disorienting in the UI.
+  showKickControl?: boolean;
+  onKickPlayer?: (playerId: string) => void;
 }
 
-export default function PlayerList({ 
-  players, 
+export default function PlayerList({
+  players,
   title,
   emptyMessage = "Waiting for players to join...",
   className = "",
   columns = 3,
   showDyslexiaControls = false,
-  onToggleDyslexiaSupport
+  onToggleDyslexiaSupport,
+  showKickControl = false,
+  onKickPlayer,
 }: PlayerListProps) {
   const columnClasses = {
     1: "grid-cols-1",
@@ -75,6 +82,21 @@ export default function PlayerList({
                 <div className="absolute top-1 right-1" title="Dyslexia support enabled">
                   <Brain className={`w-4 h-4 ${accent.text}`} />
                 </div>
+              )}
+
+              {showKickControl && onKickPlayer && (
+                <button
+                  onClick={() => {
+                    if (confirm(`Remove ${player.name} from the game?`)) {
+                      onKickPlayer(player.id);
+                    }
+                  }}
+                  aria-label={`Remove ${player.name}`}
+                  title={`Remove ${player.name}`}
+                  className="absolute top-1 left-1 w-6 h-6 rounded-full bg-white border border-gray-300 text-gray-500 hover:bg-red-500 hover:text-white hover:border-red-500 transition-colors flex items-center justify-center"
+                >
+                  <X className="w-3 h-3" />
+                </button>
               )}
             </div>
           ))}
