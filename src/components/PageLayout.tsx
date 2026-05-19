@@ -81,6 +81,18 @@ export default function PageLayout({
           </li>
           <li aria-hidden="true">·</li>
           <li>
+            <Link href="/privacy" className={`underline-offset-2 hover:underline ${footerLinkHover}`}>
+              Privacy
+            </Link>
+          </li>
+          <li aria-hidden="true">·</li>
+          <li>
+            <Link href="/terms" className={`underline-offset-2 hover:underline ${footerLinkHover}`}>
+              Terms
+            </Link>
+          </li>
+          <li aria-hidden="true">·</li>
+          <li>
             <a
               href="https://atenu.org"
               target="_blank"
