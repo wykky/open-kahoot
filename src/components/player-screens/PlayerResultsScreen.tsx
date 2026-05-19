@@ -3,11 +3,12 @@
 import { Check, X } from 'lucide-react';
 import { getChoiceColor } from '@/lib/palette';
 import type { PersonalResult, Question } from '@/types/game';
+import { getCorrectAnswerSet, normalizeSubmission } from '@/lib/game/questionType';
 
 interface PlayerResultsScreenProps {
   personalResult: PersonalResult;
   currentQuestion?: Question;
-  selectedAnswer?: number | null;
+  selectedAnswer?: number | number[] | null;
 }
 
 export default function PlayerResultsScreen({
@@ -32,10 +33,16 @@ export default function PlayerResultsScreen({
           <p className="text-base font-semibold text-black mb-2 leading-snug break-words">
             {currentQuestion.question}
           </p>
+          {currentQuestion.questionType === 'multi' && (
+            <p className="text-xs font-semibold text-yellow-800 mb-2">Multi-select question</p>
+          )}
           <div className="space-y-2 mt-3">
-            {currentQuestion.options.map((opt, idx) => {
-              const isCorrect = idx === currentQuestion.correctAnswer;
-              const isPlayerChoice = idx === selectedAnswer;
+            {(() => {
+              const correctSet = getCorrectAnswerSet(currentQuestion);
+              const picked = new Set(normalizeSubmission(selectedAnswer ?? null));
+              return currentQuestion.options.map((opt, idx) => {
+              const isCorrect = correctSet.has(idx);
+              const isPlayerChoice = picked.has(idx);
               const baseColor = getChoiceColor(idx);
 
               let ring = '';
@@ -68,7 +75,8 @@ export default function PlayerResultsScreen({
                   {icon}
                 </div>
               );
-            })}
+              });
+            })()}
           </div>
           {personalResult.explanation && (
             <div className="mt-4 pt-4 border-t border-gray-200">

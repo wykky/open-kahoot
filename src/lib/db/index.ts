@@ -114,6 +114,19 @@ function migrate(d: Database.Database): void {
     CREATE INDEX IF NOT EXISTS idx_answers_player ON answers(player_id);
     CREATE INDEX IF NOT EXISTS idx_answers_game ON answers(game_id);
   `);
+
+  // Idempotent column additions for multi-select support.
+  // SQLite ADD COLUMN errors if the column exists; check PRAGMA table_info first.
+  addColumnIfMissing(d, 'questions', 'question_type', "TEXT NOT NULL DEFAULT 'single'");
+  addColumnIfMissing(d, 'questions', 'correct_answers', 'TEXT'); // JSON array of indices for multi-select
+  addColumnIfMissing(d, 'answers', 'answer_indices', 'TEXT');    // JSON-array selection for multi-select
+}
+
+function addColumnIfMissing(d: Database.Database, table: string, column: string, definition: string): void {
+  const cols = d.prepare(`PRAGMA table_info(${table})`).all() as { name: string }[];
+  if (!cols.some((c) => c.name === column)) {
+    d.prepare(`ALTER TABLE ${table} ADD COLUMN ${column} ${definition}`).run();
+  }
 }
 
 // ============================================================================
@@ -190,8 +203,9 @@ export function insertGame(game: Game, hostUserId: string | null): void {
   );
   const insertQuestionStmt = d.prepare(
     `INSERT OR REPLACE INTO questions (
-      game_id, question_index, id, text, options_json, correct_answer, time_limit, explanation, image_url
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
+      game_id, question_index, id, text, options_json, correct_answer, time_limit, explanation, image_url,
+      question_type, correct_answers
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
   );
 
   const tx = d.transaction(() => {
@@ -221,7 +235,9 @@ export function insertGame(game: Game, hostUserId: string | null): void {
         q.correctAnswer,
         q.timeLimit,
         q.explanation ?? null,
-        q.image ?? null
+        q.image ?? null,
+        q.questionType ?? 'single',
+        q.questionType === 'multi' && q.correctAnswers ? JSON.stringify(q.correctAnswers) : null
       );
     });
   });
@@ -370,18 +386,24 @@ export function updatePlayerScore(gameId: string, playerId: string, score: numbe
 // ============================================================================
 
 export function insertAnswer(gameId: string, answer: AnswerRecord): void {
+  // answerIndex carries either a single number (single-select), a comma-joined
+  // string like "0,2" (multi-select), or null. INTEGER columns in SQLite accept
+  // mixed types but querying gets messy, so split: keep answer_index INTEGER for
+  // single-select, store the multi-select form in answer_indices TEXT.
+  const isMulti = typeof answer.answerIndex === 'string';
   getDb()
     .prepare(
       `INSERT OR REPLACE INTO answers (
-        game_id, player_id, question_index, answer_index, answer_time,
+        game_id, player_id, question_index, answer_index, answer_indices, answer_time,
         response_time_ms, points_earned, was_correct, has_dyslexia_support
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
     )
     .run(
       gameId,
       answer.playerId,
       answer.questionIndex,
-      answer.answerIndex,
+      isMulti ? null : (answer.answerIndex as number | null),
+      isMulti ? (answer.answerIndex as string) : null,
       answer.answerTime ?? null,
       answer.responseTime,
       answer.pointsEarned,

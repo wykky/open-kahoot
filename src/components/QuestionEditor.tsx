@@ -13,7 +13,11 @@ interface QuestionEditorProps {
   question: Question;
   questionIndex: number;
   totalQuestions: number;
-  onUpdateQuestion: (index: number, field: keyof Question, value: string | number) => void;
+  onUpdateQuestion: (
+    index: number,
+    field: keyof Question,
+    value: string | number | number[] | undefined
+  ) => void;
   onUpdateOption: (questionIndex: number, optionIndex: number, value: string) => void;
   onRemoveQuestion: (index: number) => void;
   onMoveQuestion: (index: number, direction: 'up' | 'down') => void;
@@ -28,32 +32,70 @@ export default function QuestionEditor({
   onRemoveQuestion,
   onMoveQuestion
 }: QuestionEditorProps) {
+  const isMulti = question.questionType === 'multi';
+  const correctSet = new Set<number>(
+    isMulti && question.correctAnswers ? question.correctAnswers : [question.correctAnswer]
+  );
+
   const handleShuffleOptions = () => {
     // Create array of options with their indices
     const optionsWithIndices = question.options.map((option, index) => ({
       option,
       originalIndex: index
     }));
-    
+
     // Shuffle the array
     for (let i = optionsWithIndices.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
       [optionsWithIndices[i], optionsWithIndices[j]] = [optionsWithIndices[j], optionsWithIndices[i]];
     }
-    
+
     // Update each option in its new position
     optionsWithIndices.forEach((item, newIndex) => {
       onUpdateOption(questionIndex, newIndex, item.option);
     });
-    
-    // Find new index of the correct answer
-    const newCorrectAnswerIndex = optionsWithIndices.findIndex(
-      item => item.originalIndex === question.correctAnswer
-    );
-    
-    // Update the correct answer index
-    onUpdateQuestion(questionIndex, 'correctAnswer', newCorrectAnswerIndex);
+
+    if (isMulti && question.correctAnswers) {
+      // Map every previous correct index through the new positions.
+      const remapped = question.correctAnswers
+        .map((orig) => optionsWithIndices.findIndex((item) => item.originalIndex === orig))
+        .filter((i) => i >= 0)
+        .sort((a, b) => a - b);
+      onUpdateQuestion(questionIndex, 'correctAnswers', remapped);
+    } else {
+      const newCorrectAnswerIndex = optionsWithIndices.findIndex(
+        (item) => item.originalIndex === question.correctAnswer
+      );
+      onUpdateQuestion(questionIndex, 'correctAnswer', newCorrectAnswerIndex);
+    }
   };
+
+  const setQuestionType = (next: 'single' | 'multi') => {
+    if ((isMulti && next === 'multi') || (!isMulti && next === 'single')) return;
+    onUpdateQuestion(questionIndex, 'questionType', next);
+  };
+
+  const toggleMultiCorrect = (idx: number) => {
+    const nextSet = new Set(correctSet);
+    if (nextSet.has(idx)) {
+      // Don't drop below 1 — host needs at least one correct to start saving the question.
+      if (nextSet.size <= 1) return;
+      nextSet.delete(idx);
+    } else {
+      nextSet.add(idx);
+    }
+    onUpdateQuestion(
+      questionIndex,
+      'correctAnswers',
+      Array.from(nextSet).sort((a, b) => a - b)
+    );
+  };
+
+  const multiPickCount = correctSet.size;
+  const multiPickHint =
+    isMulti && (multiPickCount < 2 || multiPickCount > 3)
+      ? `Pick 2 or 3 correct (currently ${multiPickCount})`
+      : null;
 
   const handleImageUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -120,8 +162,30 @@ export default function QuestionEditor({
       transition={{ duration: 0.3, ease: "easeInOut" }}
       className="bg-gray-50 rounded-lg p-6 border border-gray-300"
     >
-      <div className="flex items-start justify-between mb-4">
-        <h3 className="text-lg font-semibold text-black font-subtitle">Question {questionIndex + 1}</h3>
+      <div className="flex items-start justify-between mb-4 gap-3 flex-wrap">
+        <div className="flex items-center gap-3 flex-wrap">
+          <h3 className="text-lg font-semibold text-black font-subtitle">Question {questionIndex + 1}</h3>
+          <div className="inline-flex rounded-lg border border-gray-300 bg-white overflow-hidden text-xs font-bold">
+            <button
+              type="button"
+              onClick={() => setQuestionType('single')}
+              className={`px-2.5 py-1 transition-colors ${
+                !isMulti ? 'bg-yellow-400 text-black' : 'text-gray-600 hover:bg-yellow-50'
+              }`}
+            >
+              Single
+            </button>
+            <button
+              type="button"
+              onClick={() => setQuestionType('multi')}
+              className={`px-2.5 py-1 border-l border-gray-300 transition-colors ${
+                isMulti ? 'bg-yellow-400 text-black' : 'text-gray-600 hover:bg-yellow-50'
+              }`}
+            >
+              Multi
+            </button>
+          </div>
+        </div>
         <div className="flex gap-2">
           <Button
             onClick={handleShuffleOptions}
@@ -170,33 +234,48 @@ export default function QuestionEditor({
           placeholder="Enter your question..."
         />
       </div>
+      {isMulti && (
+        <p className={`text-xs mb-2 ${multiPickHint ? 'text-red-600 font-semibold' : 'text-gray-600'}`}>
+          {multiPickHint ?? 'Multi-select: pick all correct answers (2 or 3).'}
+        </p>
+      )}
       <div className="flex gap-4 mb-4">
         <div className="grid flex-1 grid-cols-1 md:grid-cols-2 gap-4">
-          {question.options.map((option, optionIndex) => (
-            <div 
-              key={optionIndex} 
-              className="flex items-center gap-2"
-            >
-              <input
-                type="radio"
-                name={`correct-${questionIndex}`}
-                checked={question.correctAnswer === optionIndex}
-                onChange={() => onUpdateQuestion(questionIndex, 'correctAnswer', optionIndex)}
-                className="text-green-500 focus:ring-green-500"
-              />
-              <input
-                type="text"
-                value={option}
-                onChange={(e) => onUpdateOption(questionIndex, optionIndex, e.target.value)}
-                className={`flex-1 px-3 py-2 rounded-lg border text-black placeholder-gray-400 focus:outline-none focus:ring-2 transition-all ${
-                  question.correctAnswer === optionIndex
-                    ? 'bg-green-50 border-green-400 focus:ring-green-400 focus:border-green-500'
-                    : `bg-white border-gray-300 ${accent.ringFocus} ${accent.borderFocus}`
-                }`}
-                placeholder={`Option ${optionIndex + 1}...`}
-              />
-            </div>
-          ))}
+          {question.options.map((option, optionIndex) => {
+            const isCorrect = correctSet.has(optionIndex);
+            return (
+              <div key={optionIndex} className="flex items-center gap-2">
+                {isMulti ? (
+                  <input
+                    type="checkbox"
+                    checked={isCorrect}
+                    onChange={() => toggleMultiCorrect(optionIndex)}
+                    className="w-4 h-4 text-green-500 focus:ring-green-500 rounded"
+                    aria-label={`Mark option ${optionIndex + 1} as correct`}
+                  />
+                ) : (
+                  <input
+                    type="radio"
+                    name={`correct-${questionIndex}`}
+                    checked={isCorrect}
+                    onChange={() => onUpdateQuestion(questionIndex, 'correctAnswer', optionIndex)}
+                    className="text-green-500 focus:ring-green-500"
+                  />
+                )}
+                <input
+                  type="text"
+                  value={option}
+                  onChange={(e) => onUpdateOption(questionIndex, optionIndex, e.target.value)}
+                  className={`flex-1 px-3 py-2 rounded-lg border text-black placeholder-gray-400 focus:outline-none focus:ring-2 transition-all ${
+                    isCorrect
+                      ? 'bg-green-50 border-green-400 focus:ring-green-400 focus:border-green-500'
+                      : `bg-white border-gray-300 ${accent.ringFocus} ${accent.borderFocus}`
+                  }`}
+                  placeholder={`Option ${optionIndex + 1}...`}
+                />
+              </div>
+            );
+          })}
         </div>
         <div className="relative w-28 h-28">
           <input

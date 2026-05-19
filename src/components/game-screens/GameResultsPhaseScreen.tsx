@@ -14,7 +14,7 @@ interface GameResultsPhaseScreenProps {
   personalResult: PersonalResult | null;
   onShowLeaderboard: () => void;
   currentQuestion?: Question | null;
-  selectedAnswer?: number | null;
+  selectedAnswer?: number | number[] | null;
   game?: Game | null;
 }
 

@@ -247,9 +247,32 @@ export default function HostPage() {
     }
   };
 
-  const updateQuestion = (index: number, field: keyof Question, value: string | number) => {
+  const updateQuestion = (
+    index: number,
+    field: keyof Question,
+    value: string | number | number[] | undefined
+  ) => {
     const updated = [...questions];
-    updated[index] = { ...updated[index], [field]: value };
+    const next = { ...updated[index], [field]: value } as Question;
+    // Side effect: switching questionType seeds/clears correctAnswers.
+    // Single → multi: seed correctAnswers from the existing primary correctAnswer
+    //                 (with one extra placeholder so the host immediately sees "need 2 correct")
+    // Multi → single: clear correctAnswers so single-mode reads stay clean.
+    if (field === 'questionType') {
+      if (value === 'multi') {
+        if (!next.correctAnswers || next.correctAnswers.length < 2) {
+          next.correctAnswers = next.correctAnswers ?? [next.correctAnswer];
+        }
+      } else {
+        delete next.correctAnswers;
+      }
+    }
+    // Keep correctAnswer aligned to the first entry of correctAnswers for multi —
+    // downstream code paths still read correctAnswer for display fallbacks.
+    if (field === 'correctAnswers' && Array.isArray(value) && value.length > 0) {
+      next.correctAnswer = value[0];
+    }
+    updated[index] = next;
     setQuestions(updated);
   };
 

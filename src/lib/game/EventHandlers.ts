@@ -100,7 +100,7 @@ export class EventHandlers {
           this.gameplayLoop.startGameLoop(game);
         });
       });
-      socket.on('submitAnswer', (gameId, questionId, answerIndex, persistentId, playerToken, qEpoch, clientPerceivedMs) => {
+      socket.on('submitAnswer', (gameId, questionId, answer, persistentId, playerToken, qEpoch, clientPerceivedMs) => {
         // Keyed per playerId, not IP — one classroom IP has 200 players each
         // submitting one answer per question. The per-player burst (8) handles a
         // mis-click flurry; the refill (~2/s) caps any sustained spam.
@@ -109,7 +109,7 @@ export class EventHandlers {
           // so the user sees the same UX (no error event).
           return;
         }
-        this.handleSubmitAnswer(socket, gameId, questionId, answerIndex, persistentId, playerToken, qEpoch, clientPerceivedMs);
+        this.handleSubmitAnswer(socket, gameId, questionId, answer, persistentId, playerToken, qEpoch, clientPerceivedMs);
       });
       socket.on('nextQuestion', (gameId, hostToken) => {
         this.handleHostEvent(socket, gameId, hostToken, 'nextQuestion', (game) => {
@@ -452,13 +452,13 @@ export class EventHandlers {
     socket: Socket,
     gameId: string,
     questionId: string,
-    answerIndex: number,
+    answer: number | number[],
     persistentId: string,
     playerToken: string,
     qEpoch?: number,
     clientPerceivedMs?: number
   ): void {
-    const err = validateSubmitAnswerPayload(gameId, questionId, answerIndex, persistentId);
+    const err = validateSubmitAnswerPayload(gameId, questionId, answer, persistentId);
     if (err) {
       console.warn(`[SUBMIT_ANSWER] Rejected from ${socket.id}: ${err}`);
       return;
@@ -493,7 +493,7 @@ export class EventHandlers {
       const success = this.playerManager.submitAnswer(
         game,
         persistentId,
-        answerIndex,
+        answer,
         true,
         typeof clientPerceivedMs === 'number' && Number.isFinite(clientPerceivedMs) && clientPerceivedMs >= 0
           ? Math.min(clientPerceivedMs, game.settings.answerTime * 1000)

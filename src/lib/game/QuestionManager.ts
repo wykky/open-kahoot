@@ -1,4 +1,5 @@
 import type { Game, Question, GameStats, PersonalResult } from '@/types/game';
+import { isAnswerCorrect, normalizeSubmission } from './questionType';
 
 export class QuestionManager {
   startNextQuestion(game: Game): Question | null {
@@ -37,11 +38,15 @@ export class QuestionManager {
     let correctAnswers = 0;
     
     players.forEach(player => {
-      if (player.currentAnswer !== undefined) {
-        answerCounts[player.currentAnswer]++;
-        if (player.currentAnswer === question.correctAnswer) {
-          correctAnswers++;
-        }
+      if (player.currentAnswer === undefined) return;
+      // Multi-select: increment count for every option the player picked. Percentages
+      // can sum >100% — that's expected and useful as a "how many considered each option".
+      const picked = normalizeSubmission(player.currentAnswer);
+      picked.forEach((idx) => {
+        if (idx >= 0 && idx < answerCounts.length) answerCounts[idx]++;
+      });
+      if (isAnswerCorrect(question, player.currentAnswer)) {
+        correctAnswers++;
       }
     });
 
@@ -68,7 +73,7 @@ export class QuestionManager {
       return undefined;
     }
 
-    const wasCorrect = player.currentAnswer === question.correctAnswer;
+    const wasCorrect = isAnswerCorrect(question, player.currentAnswer);
     // Canonical: read points cached by PlayerManager.updateScores. Same number as the TSV
     // row and the score delta on the live leaderboard — no recomputation, no drift.
     const pointsEarned = player.lastPointsEarned ?? 0;

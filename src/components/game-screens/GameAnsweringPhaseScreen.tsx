@@ -44,7 +44,7 @@ interface GameAnsweringPhaseScreenProps {
   game: Game | null;
   isHost: boolean;
   isPlayer: boolean;
-  onSubmitAnswer: (answerIndex: number) => void;
+  onSubmitAnswer: (answer: number | number[]) => void;
   hasAnswered: boolean;
 }
 

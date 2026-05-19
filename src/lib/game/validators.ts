@@ -72,6 +72,27 @@ function validateQuestion(q: unknown, index: number): string | null {
   if (!isFiniteInt(Q.correctAnswer) || Q.correctAnswer < 0 || Q.correctAnswer >= LIMITS.OPTIONS_COUNT) {
     return `Q${index + 1}: correctAnswer out of range`;
   }
+  if (Q.questionType !== undefined && Q.questionType !== 'single' && Q.questionType !== 'multi') {
+    return `Q${index + 1}: questionType must be 'single' or 'multi'`;
+  }
+  if (Q.questionType === 'multi') {
+    if (!Array.isArray(Q.correctAnswers) || Q.correctAnswers.length < 2 || Q.correctAnswers.length >= LIMITS.OPTIONS_COUNT) {
+      return `Q${index + 1}: multi-select needs 2 or 3 correct answers`;
+    }
+    const seen = new Set<number>();
+    for (const idx of Q.correctAnswers) {
+      if (!isFiniteInt(idx) || idx < 0 || idx >= LIMITS.OPTIONS_COUNT) {
+        return `Q${index + 1}: correctAnswers index out of range`;
+      }
+      if (seen.has(idx)) return `Q${index + 1}: correctAnswers has duplicates`;
+      seen.add(idx);
+    }
+    if (!seen.has(Q.correctAnswer)) {
+      return `Q${index + 1}: correctAnswer must be one of correctAnswers`;
+    }
+  } else if (Q.correctAnswers !== undefined) {
+    return `Q${index + 1}: correctAnswers only allowed for multi-select questions`;
+  }
   if (!isFiniteInt(Q.timeLimit) || Q.timeLimit < LIMITS.TIME_MIN || Q.timeLimit > LIMITS.TIME_MAX) {
     return `Q${index + 1}: timeLimit must be ${LIMITS.TIME_MIN}..${LIMITS.TIME_MAX}s`;
   }
@@ -128,13 +149,24 @@ export function validateJoinGamePayload(
 export function validateSubmitAnswerPayload(
   gameId: unknown,
   questionId: unknown,
-  answerIndex: unknown,
+  answer: unknown,
   persistentId: unknown
 ): string | null {
   if (!isStr(gameId) || gameId.length === 0 || gameId.length > LIMITS.ID_MAX) return 'Invalid gameId';
   if (!isStr(questionId) || questionId.length === 0 || questionId.length > LIMITS.ID_MAX) return 'Invalid questionId';
-  if (!isFiniteInt(answerIndex) || answerIndex < 0 || answerIndex >= LIMITS.OPTIONS_COUNT) {
-    return 'Invalid answerIndex';
+  // answer may be a single index (single-select) OR an array of distinct indices (multi-select).
+  if (Array.isArray(answer)) {
+    if (answer.length === 0 || answer.length > LIMITS.OPTIONS_COUNT) {
+      return 'Invalid answer (array length)';
+    }
+    const seen = new Set<number>();
+    for (const idx of answer) {
+      if (!isFiniteInt(idx) || idx < 0 || idx >= LIMITS.OPTIONS_COUNT) return 'Invalid answer index';
+      if (seen.has(idx)) return 'Duplicate answer index';
+      seen.add(idx);
+    }
+  } else if (!isFiniteInt(answer) || answer < 0 || answer >= LIMITS.OPTIONS_COUNT) {
+    return 'Invalid answer';
   }
   if (persistentId !== undefined) {
     if (!isStr(persistentId) || persistentId.length > LIMITS.ID_MAX) return 'Invalid persistentId';

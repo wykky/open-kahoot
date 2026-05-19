@@ -39,9 +39,14 @@ export default function HostAnsweringScreen({
     <div className="bg-white rounded-lg p-8 border border-gray-300 shadow-[0px_20px_30px_-10px_rgba(0,_0,_0,_0.1)]">
 
       {/* Question Text */}
-      <h1 className="text-4xl text-black text-center leading-tight mb-8 font-subtitle">
+      <h1 className="text-4xl text-black text-center leading-tight mb-2 font-subtitle">
         {currentQuestion.question}
       </h1>
+      {currentQuestion.questionType === 'multi' && (
+        <p className="text-center text-base font-bold text-yellow-700 mb-6">
+          Pick all that apply
+        </p>
+      )}
 
       {/* Question Image */}
       {currentQuestion.image && (

@@ -1,8 +1,22 @@
+/**
+ * Question types:
+ * - 'single' (default): exactly one correct answer. Tapping a button auto-submits.
+ * - 'multi':  two or three correct answers. Player toggles selections and taps Submit.
+ *
+ * For backward compat `correctAnswer` is always populated (single = the answer, multi =
+ * correctAnswers[0]). Read multi-aware code via helpers in src/lib/game/questionType.ts.
+ */
+export type QuestionType = 'single' | 'multi';
+
 export interface Question {
   id: string;
   question: string;
   options: string[];
-  correctAnswer: number; // Index of correct answer (0-3)
+  correctAnswer: number; // Index of (primary) correct answer (0-3)
+  // Multi-select questions only: full set of correct indices (2-3 entries).
+  // For single-correct questions this is undefined; canonical answer is `correctAnswer`.
+  correctAnswers?: number[];
+  questionType?: QuestionType; // Undefined defaults to 'single'
   timeLimit: number; // Time limit in seconds
   explanation?: string;
   image?: string;
@@ -13,7 +27,9 @@ export interface AnswerRecord {
   playerName: string;
   questionIndex: number;
   questionId: string;
-  answerIndex: number | null; // null if no answer was given
+  // Single-select: the chosen index (0-3) or null. Multi-select: comma-joined indices
+  // (e.g. "0,2") for stable TSV export, or null if no selection was made.
+  answerIndex: number | string | null;
   answerTime?: number;
   responseTime: number; // milliseconds from question start
   pointsEarned: number;
@@ -68,7 +84,8 @@ export interface Player {
   name: string;
   score: number;
   isHost: boolean;
-  currentAnswer?: number;
+  // Single-select: chosen index (0-3). Multi-select: array of selected indices.
+  currentAnswer?: number | number[];
   answerTime?: number;
   perceivedResponseMs?: number; // Phase 8: client-reported time-to-click, used for adaptive scoring
   isConnected: boolean; // Track connection status
@@ -187,7 +204,8 @@ export interface ClientToServerEvents {
   submitAnswer: (
     gameId: string,
     questionId: string,
-    answerIndex: number,
+    // Single-select: a single index (0-3). Multi-select: array of indices.
+    answer: number | number[],
     persistentId: string,
     playerToken: string,
     qEpoch?: number,

@@ -2,6 +2,13 @@ import { v4 as uuidv4 } from 'uuid';
 import type { Game, Player, Question } from '@/types/game';
 import { issuePlayerToken, verifyPlayerToken } from './tokens';
 import { upsertPlayer, insertAnswer, updatePlayerScore } from '@/lib/db';
+import {
+  isMultiSelect,
+  isAnswerCorrect,
+  serializeSubmission,
+  parseAnswerIndices,
+  getCorrectAnswerArray,
+} from './questionType';
 
 // Phase 8: adaptive scoring trust window — accept client-reported time if within 2s of server-measured.
 const TRUST_WINDOW_MS = 2000;
@@ -30,7 +37,8 @@ function streakBonusFor(streak: number): number {
 export function computeQuestionPoints(player: Player, game: Game, question: Question): number {
   if (player.isHost) return 0;
   if (player.currentAnswer === undefined) return 0;
-  if (player.currentAnswer !== question.correctAnswer) return 0;
+  // Strict correctness — works for both single-select and multi-select.
+  if (!isAnswerCorrect(question, player.currentAnswer)) return 0;
 
   const questionStartTime = game.questionStartTime || Date.now();
   const answerTimeLimit = game.settings.answerTime * 1000;
@@ -109,6 +117,21 @@ export class PlayerManager {
     const perm = gameMap?.get(`${player.id}:${game.currentQuestionIndex}`);
     if (!perm) return clickedIndex; // No perm yet (shouldn't happen — emit always precedes submit)
     return perm[clickedIndex] ?? clickedIndex;
+  }
+
+  /**
+   * Multi-select counterpart: translate every clicked index through the per-player
+   * permutation. Returns a deduped, sorted canonical array suitable for storage
+   * on player.currentAnswer.
+   */
+  translateAnswerIndices(game: Game, player: Player, clickedIndices: number[]): number[] {
+    if (!game.settings.shuffleAnswers) {
+      return Array.from(new Set(clickedIndices)).sort((a, b) => a - b);
+    }
+    const gameMap = this.optionPermutations.get(game.id);
+    const perm = gameMap?.get(`${player.id}:${game.currentQuestionIndex}`);
+    if (!perm) return Array.from(new Set(clickedIndices)).sort((a, b) => a - b);
+    return Array.from(new Set(clickedIndices.map((i) => perm[i] ?? i))).sort((a, b) => a - b);
   }
 
   clearOptionPermutations(gameId: string): void {
@@ -233,7 +256,7 @@ export class PlayerManager {
   submitAnswer(
     game: Game,
     playerId: string,
-    answerIndex: number,
+    answer: number | number[],
     isPersistentId: boolean = false,
     clientPerceivedMs?: number
   ): boolean {
@@ -242,9 +265,21 @@ export class PlayerManager {
       : this.getPlayerBySocketId(playerId, game);
     if (!player || player.isHost) return false;
     if (player.currentAnswer !== undefined) return false; // no double answers
-    // Translate from player's shuffled space to canonical (no-op if shuffleAnswers is off)
-    const canonicalIndex = this.translateAnswerIndex(game, player, answerIndex);
-    player.currentAnswer = canonicalIndex;
+
+    const question = game.questions[game.currentQuestionIndex];
+    const wantsMulti = question ? isMultiSelect(question) : Array.isArray(answer);
+
+    if (wantsMulti) {
+      // Coerce single-number submissions to single-element array for shape consistency.
+      const submitted = Array.isArray(answer) ? answer : [answer];
+      // Translate from player's shuffled space to canonical (no-op if shuffleAnswers is off)
+      player.currentAnswer = this.translateAnswerIndices(game, player, submitted);
+    } else {
+      // Single-select: clients on stale builds may still send arrays — accept the first.
+      const single = Array.isArray(answer) ? answer[0] : answer;
+      if (typeof single !== 'number') return false;
+      player.currentAnswer = this.translateAnswerIndex(game, player, single);
+    }
     player.answerTime = Date.now();
     if (typeof clientPerceivedMs === 'number' && clientPerceivedMs >= 0) {
       player.perceivedResponseMs = clientPerceivedMs; // Phase 8: adaptive scoring input
@@ -281,7 +316,7 @@ export class PlayerManager {
     // First-correct: the earliest correct submitter. Use server-measured answerTime
     // (not perceived) since perceived is a client-reported value, vulnerable to spoofing.
     const correctPlayers = game.players.filter(
-      (p) => !p.isHost && p.currentAnswer === question.correctAnswer && p.answerTime !== undefined
+      (p) => !p.isHost && isAnswerCorrect(question, p.currentAnswer) && p.answerTime !== undefined
     );
     correctPlayers.sort((a, b) => (a.answerTime ?? Infinity) - (b.answerTime ?? Infinity));
     const firstCorrectId = correctPlayers[0]?.id;
@@ -338,8 +373,7 @@ export class PlayerManager {
     game.players.forEach((player) => {
       if (player.isHost) return;
       const responseTime = player.answerTime ? player.answerTime - questionStartTime : 0;
-      const wasCorrect =
-        player.currentAnswer !== undefined && player.currentAnswer === question.correctAnswer;
+      const wasCorrect = isAnswerCorrect(question, player.currentAnswer);
       // Read the canonical points from updateScores. If updateScores didn't run for some
       // reason (shouldn't happen — executeResultsPhase or executeFinishedPhase always calls
       // it first), default to 0 rather than recomputing with a different formula.
@@ -349,7 +383,8 @@ export class PlayerManager {
         playerName: player.name,
         questionIndex: game.currentQuestionIndex,
         questionId: question.id,
-        answerIndex: player.currentAnswer ?? null,
+        // Single → number, multi → "0,2" comma-joined, none → null
+        answerIndex: serializeSubmission(player.currentAnswer),
         answerTime: player.answerTime,
         responseTime,
         pointsEarned,
@@ -390,15 +425,16 @@ export class PlayerManager {
     const headers = [
       'question_index',
       'question_datetime',
+      'question_type', // 'single' or 'multi'
       'question_string',
-      'proposition_correct',
+      'proposition_correct', // pipe-separated " | " for multi-select
       'proposition_wrong1',
       'proposition_wrong2',
       'proposition_wrong3',
       'question_explanation',
       'player_id',
       'player_nickname',
-      'choice_string',
+      'choice_string', // pipe-separated " | " when player picked multiple
       'choice_datetime',
       'has_dyslexia_support',
     ];
@@ -413,22 +449,28 @@ export class PlayerManager {
       const qStart = ar.answerTime ? new Date(ar.answerTime - ar.responseTime) : new Date();
       const qDatetime = qStart.toISOString();
       const cDatetime = ar.answerTime ? new Date(ar.answerTime).toISOString() : '';
-      const correct = question.options[question.correctAnswer];
-      const wrongs = question.options.filter((_, i) => i !== question.correctAnswer);
+      const correctIdxs = getCorrectAnswerArray(question);
+      const correctSet = new Set(correctIdxs);
+      const correctStr = correctIdxs.map((i) => question.options[i] ?? '').join(' | ');
+      const wrongs = question.options
+        .map((opt, i) => (correctSet.has(i) ? null : opt))
+        .filter((v): v is string => v !== null);
       while (wrongs.length < 3) wrongs.push('');
-      const choiceString = ar.answerIndex !== null ? question.options[ar.answerIndex] : '';
+      const choiceIdxs = parseAnswerIndices(ar.answerIndex);
+      const choiceStr = choiceIdxs.map((i) => question.options[i] ?? '').join(' | ');
       rows.push([
         ar.questionIndex.toString(),
         qDatetime,
+        question.questionType === 'multi' ? 'multi' : 'single',
         question.question.replace(/\t/g, ' '),
-        correct.replace(/\t/g, ' '),
+        correctStr.replace(/\t/g, ' '),
         wrongs[0].replace(/\t/g, ' '),
         wrongs[1].replace(/\t/g, ' '),
         wrongs[2].replace(/\t/g, ' '),
         (question.explanation || '').replace(/\t/g, ' '),
         ar.playerId,
         ar.playerName.replace(/\t/g, ' '),
-        choiceString.replace(/\t/g, ' '),
+        choiceStr.replace(/\t/g, ' '),
         cDatetime,
         ar.hasDyslexiaSupport ? 'true' : 'false',
       ].join('\t'));

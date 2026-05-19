@@ -5,6 +5,7 @@ import { GameStats } from '@/types/game';
 import Button from '@/components/Button';
 import { ChevronRight } from 'lucide-react';
 import { useCountdownMusic } from '@/lib/useCountdownMusic';
+import { getCorrectAnswerSet } from '@/lib/game/questionType';
 
 interface HostResultsScreenProps {
   questionStats: GameStats;
@@ -59,10 +60,18 @@ export default function HostResultsScreen({
         </Button>
       </div>
 
+      {questionStats.question.questionType === 'multi' && (
+        <p className="text-center text-sm font-semibold text-yellow-800 mb-3">
+          Multi-select — every correct option highlighted below
+        </p>
+      )}
+      {(() => {
+        const correctSet = getCorrectAnswerSet(questionStats.question);
+        return (
       <div className="space-y-4">
         {questionStats.answers.map((answer, index) => {
           const baseColor = choiceColorClasses[index];
-          const opacity = index === questionStats.question.correctAnswer ? 'opacity-100' : 'opacity-40';
+          const opacity = correctSet.has(index) ? 'opacity-100' : 'opacity-40';
           
           return (
             <div key={index} className="relative rounded-lg border-2 border-gray-300 overflow-hidden">
@@ -91,6 +100,8 @@ export default function HostResultsScreen({
           );
         })}
       </div>
+        );
+      })()}
     </div>
   );
-} 
+}

@@ -56,7 +56,8 @@ interface GameState {
   currentQuestion: Question | null;
   timeLeft: number;
   phase: 'thinking' | 'answering';
-  selectedAnswer: number | null;
+  // Multi-select: array of indices the player picked. Single-select: single index. null before answering.
+  selectedAnswer: number | number[] | null;
   hasAnswered: boolean;
   questionStats: GameStats | null;
   personalResult: PersonalResult | null;
@@ -75,7 +76,7 @@ type GameAction =
   | { type: 'SET_GAME_DATA'; payload: { game: Game; status: GamePhase } }
   | { type: 'START_THINKING_PHASE'; payload: { question: Question; thinkTime: number; deadline?: PhaseDeadline } }
   | { type: 'START_ANSWERING_PHASE'; payload: { answerTime: number; deadline?: PhaseDeadline } }
-  | { type: 'SUBMIT_ANSWER'; payload: { answerIndex: number } }
+  | { type: 'SUBMIT_ANSWER'; payload: { answer: number | number[] } }
   | { type: 'QUESTION_ENDED'; payload: GameStats }
   | { type: 'WAITING_FOR_RESULTS' }
   | { type: 'PERSONAL_RESULT'; payload: PersonalResult }
@@ -130,7 +131,7 @@ function gameReducer(state: GameState, action: GameAction): GameState {
       };
     }
     case 'SUBMIT_ANSWER':
-      return { ...state, selectedAnswer: action.payload.answerIndex, hasAnswered: true };
+      return { ...state, selectedAnswer: action.payload.answer, hasAnswered: true };
     case 'QUESTION_ENDED':
       return { ...state, questionStats: action.payload, gameStatus: 'results' };
     case 'WAITING_FOR_RESULTS':
@@ -321,9 +322,9 @@ export default function GamePage() {
     return () => { if (timer) clearInterval(timer); };
   }, [state.timeLeft, state.phase]);
 
-  const submitAnswer = (answerIndex: number) => {
+  const submitAnswer = (answer: number | number[]) => {
     if (state.hasAnswered || !state.currentQuestion || state.phase !== 'answering') return;
-    dispatch({ type: 'SUBMIT_ANSWER', payload: { answerIndex } });
+    dispatch({ type: 'SUBMIT_ANSWER', payload: { answer } });
     const gamePin = state.game?.pin;
     if (!gamePin || !gameId) return;
     const persistentId = (() => {
@@ -346,7 +347,7 @@ export default function GamePage() {
       'submitAnswer',
       gameId,
       state.currentQuestion.id,
-      answerIndex,
+      answer,
       persistentId,
       playerToken,
       state.qEpoch ?? undefined,
