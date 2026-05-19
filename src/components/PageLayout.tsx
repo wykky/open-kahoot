@@ -37,15 +37,14 @@ export default function PageLayout({
 
   return (
     <div className={`min-h-screen ${gradientClasses[gradient]} p-8 ${centerVertically ? 'flex flex-col justify-center' : ''} relative`}>
-      <div className="absolute top-4 right-4 z-50 flex items-center gap-2">
+      <div className="absolute top-4 right-4 z-50 flex items-center gap-1.5">
         <Link
           href="/leaderboard"
           aria-label="Leaderboard"
           title="Leaderboard"
-          className="flex items-center gap-2 p-3 sm:px-3 sm:py-2 rounded-lg bg-yellow-400 text-black border-2 border-black hover:bg-black hover:text-yellow-400 transition-colors text-sm font-bold shadow-md"
+          className="w-10 h-10 rounded-lg bg-yellow-400 text-black border border-black hover:bg-black hover:text-yellow-400 transition-colors shadow-sm flex items-center justify-center"
         >
-          <Trophy className="w-5 h-5 sm:w-4 sm:h-4" />
-          <span className="hidden sm:inline">Leaderboard</span>
+          <Trophy className="w-4 h-4" />
         </Link>
         <UserMenu />
         <LanguageSelector />

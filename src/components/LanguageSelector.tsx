@@ -15,14 +15,11 @@ export default function LanguageSelector() {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
-  const current = LANGUAGES.find(l => l.code === i18n.language) || LANGUAGES[0];
+  const current = LANGUAGES.find((l) => l.code === i18n.language) || LANGUAGES[0];
 
-  // Close dropdown on outside click
   useEffect(() => {
     function onClick(e: MouseEvent) {
-      if (ref.current && !ref.current.contains(e.target as Node)) {
-        setOpen(false);
-      }
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
     }
     if (open) {
       document.addEventListener('mousedown', onClick);
@@ -39,16 +36,15 @@ export default function LanguageSelector() {
     <div className="relative inline-block" ref={ref}>
       <button
         onClick={() => setOpen(!open)}
-        className="flex items-center gap-2 p-2 sm:px-3 sm:py-2 rounded-lg bg-black text-yellow-400 border-2 border-yellow-400 hover:bg-yellow-400 hover:text-black transition-colors text-sm font-bold shadow-md"
+        className="w-10 h-10 rounded-lg bg-yellow-400 text-black border border-black hover:bg-black hover:text-yellow-400 transition-colors shadow-sm flex items-center justify-center"
         aria-label={`Choose language (current: ${current.label})`}
         title={current.label}
       >
-        <Globe className="w-5 h-5 sm:w-4 sm:h-4" />
-        <span className="hidden sm:inline">{current.label}</span>
+        <Globe className="w-4 h-4" />
       </button>
       {open && (
-        <div className="absolute right-0 top-full mt-2 bg-white border-2 border-black rounded-lg shadow-xl overflow-hidden z-50 min-w-[160px]">
-          {LANGUAGES.map(lang => (
+        <div className="absolute right-0 top-full mt-2 bg-white border border-black rounded-lg shadow-xl overflow-hidden z-50 min-w-[160px]">
+          {LANGUAGES.map((lang) => (
             <button
               key={lang.code}
               onClick={() => change(lang.code)}

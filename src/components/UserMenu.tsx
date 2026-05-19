@@ -21,8 +21,11 @@ export default function UserMenu() {
 
   if (status === "loading") {
     return (
-      <div className="p-3 sm:px-3 sm:py-2 bg-black text-yellow-400 rounded-lg border-2 border-yellow-400 text-sm font-bold shadow-md">
-        ...
+      <div
+        className="w-10 h-10 rounded-lg bg-black text-yellow-400 border border-yellow-400 shadow-sm flex items-center justify-center text-xs font-bold"
+        aria-label="Loading"
+      >
+        …
       </div>
     );
   }
@@ -31,32 +34,30 @@ export default function UserMenu() {
     return (
       <button
         onClick={() => signIn()}
-        className="flex items-center gap-2 p-3 sm:px-3 sm:py-2 rounded-lg bg-yellow-400 text-black border-2 border-black hover:bg-black hover:text-yellow-400 transition-colors text-sm font-bold shadow-md"
-        aria-label="Sign in with Atenu"
+        className="w-10 h-10 rounded-lg bg-yellow-400 text-black border border-black hover:bg-black hover:text-yellow-400 transition-colors shadow-sm flex items-center justify-center"
+        aria-label="Sign in"
         title="Sign in"
       >
-        <LogIn className="w-5 h-5 sm:w-4 sm:h-4" />
-        <span className="hidden sm:inline">Sign In</span>
+        <LogIn className="w-4 h-4" />
       </button>
     );
   }
 
+  const name = session.user?.name || session.user?.email || "User";
   const initial = (session.user?.name || session.user?.email || "?")[0].toUpperCase();
 
   return (
     <div className="relative inline-block" ref={ref}>
       <button
         onClick={() => setOpen(!open)}
-        className="flex items-center gap-2 p-2 sm:p-1.5 rounded-lg bg-yellow-400 text-black border-2 border-black hover:opacity-90 transition-opacity text-sm font-bold shadow-md"
-        aria-label={`User menu (${session.user?.name || session.user?.email})`}
+        className="w-10 h-10 rounded-full bg-black text-yellow-400 border border-black hover:opacity-90 transition-opacity flex items-center justify-center font-bold text-sm shadow-sm"
+        aria-label={`User menu (${name})`}
+        title={name}
       >
-        <div className="w-7 h-7 rounded-full bg-black text-yellow-400 flex items-center justify-center font-bold text-sm">
-          {initial}
-        </div>
-        <span className="hidden sm:inline pr-2 max-w-[140px] truncate">{session.user?.name || session.user?.email}</span>
+        {initial}
       </button>
       {open && (
-        <div className="absolute right-0 top-full mt-2 bg-white border-2 border-black rounded-lg shadow-xl overflow-hidden z-50 min-w-[220px]">
+        <div className="absolute right-0 top-full mt-2 bg-white border border-black rounded-lg shadow-xl overflow-hidden z-50 min-w-[220px]">
           <div className="px-4 py-3 text-sm text-black border-b border-gray-200 bg-yellow-50">
             <div className="font-bold truncate">{session.user?.name || "User"}</div>
             <div className="text-xs text-gray-600 truncate">{session.user?.email}</div>
