@@ -10,6 +10,7 @@
 import { NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import { getGameTsvForHost } from '@/lib/db';
+import { tsvDownloadLimiter } from '@/lib/rate-limit';
 
 export const dynamic = 'force-dynamic';
 
@@ -21,6 +22,12 @@ export async function GET(
   const dbUserId = (session?.user as { dbUserId?: string } | undefined)?.dbUserId;
   if (!session || !dbUserId) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  // 20 downloads/sec/user is way above any legitimate manual-click pattern but
+  // caps a buggy client that retries in a loop.
+  if (!tsvDownloadLimiter.consume(dbUserId)) {
+    return NextResponse.json({ error: 'Rate limit exceeded' }, { status: 429 });
   }
 
   const { id } = await params;

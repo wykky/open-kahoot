@@ -19,6 +19,29 @@ import {
   validateGameId,
   LIMITS,
 } from './validators';
+import {
+  joinGameIpLimiter,
+  createGameIpLimiter,
+  submitAnswerLimiter,
+  validateGameLimiter,
+  downloadLogsLimiter,
+  hostEventLimiter,
+  connectionLimiter,
+} from '@/lib/rate-limit';
+
+/**
+ * Resolve the real client IP behind Cloudflare Tunnel. CF sets `cf-connecting-ip`
+ * on the WebSocket upgrade request; the underlying TCP peer is always loopback
+ * (cloudflared on 127.0.0.1) so `socket.handshake.address` is useless in prod.
+ * Falls back to handshake.address for dev / direct connections.
+ */
+function getSocketIp(socket: Socket): string {
+  const cfIp = socket.handshake.headers['cf-connecting-ip'];
+  if (typeof cfIp === 'string' && cfIp.length > 0) return cfIp;
+  const xff = socket.handshake.headers['x-forwarded-for'];
+  if (typeof xff === 'string' && xff.length > 0) return xff.split(',')[0]!.trim();
+  return socket.handshake.address || 'unknown';
+}
 
 export class EventHandlers {
   constructor(
@@ -31,13 +54,41 @@ export class EventHandlers {
 
   setupEventHandlers(): void {
     this.io.on('connection', (socket) => {
+      // Connection-level rate limit: throttle new socket opens per IP. Reject the
+      // socket entirely if exceeded — no events get wired up. This is the cheapest
+      // backstop against a botnet establishing 1000s of sockets.
+      const ip = getSocketIp(socket);
+      if (!connectionLimiter.consume(ip)) {
+        socket.disconnect(true);
+        return;
+      }
       socket.on('createGame', (title, questions, settings, dbUserId, callback) => {
+        if (!createGameIpLimiter.consume(ip)) {
+          socket.emit('error', 'Slow down — too many quizzes created');
+          return;
+        }
         this.handleCreateGame(socket, title, questions, settings, dbUserId, callback);
       });
       socket.on('joinGame', (pin, playerName, persistentId, playerToken, dbUserId, callback) => {
+        // Per-IP cap absorbs the classroom-mass-join burst (capacity 250) while limiting
+        // PIN enumeration sustained rate to ~5/sec. Earlier draft of this had a per-(IP, PIN)
+        // cap too — dropped because real classrooms share an IP AND a PIN, so it just
+        // throttled legitimate students.
+        if (!joinGameIpLimiter.consume(ip)) {
+          socket.emit('error', 'Too many join attempts — slow down');
+          callback?.(false);
+          return;
+        }
         this.handleJoinGame(socket, pin, playerName, persistentId, playerToken, dbUserId, callback);
       });
       socket.on('validateGame', (gameId, auth, callback) => {
+        if (!validateGameLimiter.consume(ip)) {
+          // Return false rather than emit an error — fewer info leaks to attackers
+          // probing whether a gameId is valid, and reconnecting clients fall back
+          // naturally.
+          callback?.(false);
+          return;
+        }
         this.handleValidateGame(socket, gameId, auth, callback);
       });
       socket.on('startGame', (gameId, hostToken) => {
@@ -50,6 +101,14 @@ export class EventHandlers {
         });
       });
       socket.on('submitAnswer', (gameId, questionId, answerIndex, persistentId, playerToken, qEpoch, clientPerceivedMs) => {
+        // Keyed per playerId, not IP — one classroom IP has 200 players each
+        // submitting one answer per question. The per-player burst (8) handles a
+        // mis-click flurry; the refill (~2/s) caps any sustained spam.
+        if (typeof persistentId === 'string' && !submitAnswerLimiter.consume(persistentId)) {
+          // Silent drop — submitAnswer already silently ignores duplicate answers,
+          // so the user sees the same UX (no error event).
+          return;
+        }
         this.handleSubmitAnswer(socket, gameId, questionId, answerIndex, persistentId, playerToken, qEpoch, clientPerceivedMs);
       });
       socket.on('nextQuestion', (gameId, hostToken) => {
@@ -69,6 +128,10 @@ export class EventHandlers {
         });
       });
       socket.on('downloadGameLogs', (gameId, hostToken) => {
+        if (!downloadLogsLimiter.consume(ip)) {
+          socket.emit('error', 'Too many download requests — try again in a moment');
+          return;
+        }
         this.handleDownloadGameLogs(socket, gameId, hostToken);
       });
       socket.on('toggleDyslexiaSupport', (gameId, playerId, hostToken) => {
@@ -124,6 +187,13 @@ export class EventHandlers {
         `[${eventName}] Rejected from ${socket.id} | PIN ${game.pin} | gameId=${game.id.slice(0, 8)}... | hostId=${game.hostId.slice(0, 8)}... | token type=${typeof hostToken} len=${tokLen} prefix='${tokPrefix}'`
       );
       socket.emit('error', 'Not authorized');
+      return;
+    }
+    // Per-host rate limit applied AFTER token verify so attackers spamming bogus
+    // tokens hit the 'Not authorized' path (cheap) without exhausting the host's
+    // own bucket. 30/s sustained is way above any real host UI debouncing.
+    if (!hostEventLimiter.consume(game.hostId)) {
+      // Drop silently — host UI debounces, this is a backstop against scripted abuse.
       return;
     }
     try {

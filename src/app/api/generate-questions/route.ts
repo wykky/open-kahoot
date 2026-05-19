@@ -11,6 +11,15 @@ import { NextRequest, NextResponse } from 'next/server';
 import OpenAI from 'openai';
 import { z } from 'zod';
 import { auth } from '@/auth';
+import { aiGenUserLimiter, aiGenIpLimiter } from '@/lib/rate-limit';
+
+function getRequestIp(request: NextRequest): string {
+  const cf = request.headers.get('cf-connecting-ip');
+  if (cf) return cf;
+  const xff = request.headers.get('x-forwarded-for');
+  if (xff) return xff.split(',')[0]!.trim();
+  return 'unknown';
+}
 
 const QuizResponseSchema = z.object({
   questions: z.array(
@@ -29,6 +38,17 @@ export async function POST(request: NextRequest) {
   const session = await auth();
   if (!session?.user) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  // Rate limit by user (primary, since the endpoint is auth-gated) AND by IP
+  // (backstop in case one user's session token is shared across many machines).
+  const userId = (session.user as { dbUserId?: string }).dbUserId ?? session.user.email ?? 'unknown-user';
+  const ip = getRequestIp(request);
+  if (!aiGenUserLimiter.consume(userId) || !aiGenIpLimiter.consume(ip)) {
+    return NextResponse.json(
+      { error: 'Rate limit exceeded — please wait a minute before generating more questions' },
+      { status: 429 }
+    );
   }
 
   try {

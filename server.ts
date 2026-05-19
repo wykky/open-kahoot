@@ -5,6 +5,7 @@ import { Server as SocketIOServer } from 'socket.io';
 import { GameServer } from './src/lib/game';
 import { SOCKET_PATH } from './src/lib/socket-config';
 import { initDb, closeDb, sweepInflightGamesOnBoot, deleteOldGames, getGameTsv } from './src/lib/db';
+import { logRateLimitSummary } from './src/lib/rate-limit';
 
 const dev = process.env.NODE_ENV !== 'production';
 const hostname = 'localhost';
@@ -44,6 +45,10 @@ setInterval(() => {
     console.error('[db] Retention sweep error:', e);
   }
 }, 24 * 60 * 60 * 1000);
+
+// Rate-limit observability: log per-limiter breach counts every 60s. Quiet when
+// no breaches — this only fires under load or attack, so non-empty output is a signal.
+setInterval(logRateLimitSummary, 60_000);
 
 app.prepare().then(() => {
   const httpServer = createServer(async (req, res) => {
