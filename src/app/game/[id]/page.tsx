@@ -342,7 +342,6 @@ export default function GamePage() {
     const socket = getSocket();
     if (!gameId) return;
     const tok = getHostToken();
-    console.log('[client] showLeaderboard | gameId:', gameId, '| token len:', tok.length, '| prefix:', tok.slice(0, 12));
     socket.emit('showLeaderboard', gameId, tok);
   };
 
