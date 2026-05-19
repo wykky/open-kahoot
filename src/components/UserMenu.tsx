@@ -2,7 +2,8 @@
 
 import { useSession, signIn, signOut } from "next-auth/react";
 import { useState, useRef, useEffect } from "react";
-import { LogIn, LogOut } from "lucide-react";
+import Link from "next/link";
+import { LogIn, LogOut, History } from "lucide-react";
 
 export default function UserMenu() {
   const { data: session, status } = useSession();
@@ -62,6 +63,14 @@ export default function UserMenu() {
             <div className="font-bold truncate">{session.user?.name || "User"}</div>
             <div className="text-xs text-gray-600 truncate">{session.user?.email}</div>
           </div>
+          <Link
+            href="/host/history"
+            onClick={() => setOpen(false)}
+            className="block w-full text-left px-4 py-3 text-sm text-black hover:bg-yellow-400 transition-colors flex items-center gap-2 border-b border-gray-200"
+          >
+            <History className="w-4 h-4" />
+            My quizzes
+          </Link>
           <button
             onClick={() => signOut()}
             className="block w-full text-left px-4 py-3 text-sm text-black hover:bg-yellow-400 transition-colors flex items-center gap-2"

@@ -261,6 +261,52 @@ export function getGamePin(gameId: string): string | null {
   return row?.pin ?? null;
 }
 
+export interface HostGameSummary {
+  id: string;
+  pin: string;
+  title: string;
+  status: string;
+  player_count: number;
+  question_count: number;
+  created_at: number;
+  started_at: number | null;
+  finished_at: number | null;
+  has_tsv: number;
+}
+
+/**
+ * Games this host has run, newest first. Excludes draft lobbies that were
+ * created but never started (started_at IS NULL) — those are noise for the
+ * "my past quizzes" view. To include them, drop the started_at filter.
+ */
+export function getGamesByHost(hostUserId: string, opts: { limit?: number; offset?: number } = {}): HostGameSummary[] {
+  const limit = opts.limit ?? 50;
+  const offset = opts.offset ?? 0;
+  return getDb()
+    .prepare(
+      `SELECT
+        id, pin, title, status, player_count, question_count,
+        created_at, started_at, finished_at,
+        CASE WHEN tsv_data IS NOT NULL THEN 1 ELSE 0 END AS has_tsv
+       FROM games
+       WHERE host_user_id = ? AND started_at IS NOT NULL
+       ORDER BY created_at DESC
+       LIMIT ? OFFSET ?`
+    )
+    .all(hostUserId, limit, offset) as HostGameSummary[];
+}
+
+/**
+ * TSV download with ownership check baked in: returns null if the game
+ * doesn't exist OR isn't owned by this host. Prevents IDOR via guessed gameIds.
+ */
+export function getGameTsvForHost(gameId: string, hostUserId: string): string | null {
+  const row = getDb()
+    .prepare('SELECT tsv_data FROM games WHERE id = ? AND host_user_id = ?')
+    .get(gameId, hostUserId) as { tsv_data: string | null } | undefined;
+  return row?.tsv_data ?? null;
+}
+
 /** Boot sweep: any non-finished game becomes finished (server crashed mid-game). */
 export function sweepInflightGamesOnBoot(generateTsv: (gameId: string) => string | null): number {
   const d = getDb();
