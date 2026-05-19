@@ -94,6 +94,29 @@
       "gamePin": "Game PIN"
     }
   },
+  "signIn": {
+    "title": "Host Sign In",
+    "description": "Sign in to host games. Players don't need an account.",
+    "google": "Sign in with Google",
+    "or": "or",
+    "termsPrefix": "By signing in you agree to our ",
+    "terms": "Terms",
+    "termsAnd": " and ",
+    "privacy": "Privacy Policy",
+    "termsSuffix": "."
+  },
+  "leaderboardPage": {
+    "title": "Leaderboard",
+    "tabAll": "All-time",
+    "tabMonth": "This month",
+    "tabWeek": "This week",
+    "empty": "No scores yet. Sign in and play a game!",
+    "colPlayer": "Player",
+    "colPoints": "Points",
+    "colGames": "Games",
+    "colCorrect": "Correct",
+    "footer": "Only signed-in players (Google or Telegram) appear here. Anonymous nickname players are not tracked."
+  },
   "hostHistory": {
     "title": "My quizzes",
     "newQuiz": "+ New quiz",

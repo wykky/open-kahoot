@@ -94,6 +94,29 @@
       "gamePin": "PIN taphaa"
     }
   },
+  "signIn": {
+    "title": "Seensa Hooggantuu",
+    "description": "Tapha hoogganuuf seeni. Taphattoonni herrega hin barbaachisu.",
+    "google": "Google'iin seeni",
+    "or": "yookin",
+    "termsPrefix": "Seenuun keenya ",
+    "terms": "Haalota Itti Fayyadama",
+    "termsAnd": " fi ",
+    "privacy": "Imaammata Iccitii",
+    "termsSuffix": " keenya waliigaltee taasifteetta."
+  },
+  "leaderboardPage": {
+    "title": "Gabatee Sadarkaa",
+    "tabAll": "Yeroo hunda",
+    "tabMonth": "Ji'a kana",
+    "tabWeek": "Torban kana",
+    "empty": "Hanga ammaatti qabxiin hin jiru. Seeni taphadhu!",
+    "colPlayer": "Taphattuu",
+    "colPoints": "Qabxiilee",
+    "colGames": "Taphoota",
+    "colCorrect": "Sirrii",
+    "footer": "Taphattoonni seenan (Google ykn Telegram) qofatu asitti mul'ata. Taphattoonni maqaa qofa fayyadaman hin to'ataman."
+  },
   "hostHistory": {
     "title": "Gaaffilee koo",
     "newQuiz": "+ Gaaffii haaraa",

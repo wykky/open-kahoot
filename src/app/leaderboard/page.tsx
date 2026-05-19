@@ -8,6 +8,7 @@
 import Link from 'next/link';
 import PageLayout from '@/components/PageLayout';
 import { getLeaderboard, type LeaderboardEntry } from '@/lib/db';
+import { getDict } from '@/lib/i18n-server';
 
 export const dynamic = 'force-dynamic';
 
@@ -60,18 +61,19 @@ export default async function LeaderboardPage({
   const range: Range = rawRange === 'week' || rawRange === 'month' ? rawRange : 'all';
   const sinceTs = rangeToSinceTs(range);
   const entries = withCompetitionRanks(getLeaderboard({ sinceTs, limit: 50 }));
+  const dict = await getDict();
 
   return (
     <PageLayout gradient="leaderboard" maxWidth="2xl">
       <div className="bg-white rounded-2xl border-4 border-black shadow-xl p-4 sm:p-8">
-        <h1 className="text-3xl sm:text-4xl font-title text-black text-center mb-6">Leaderboard</h1>
+        <h1 className="text-3xl sm:text-4xl font-title text-black text-center mb-6">{dict.leaderboardPage.title}</h1>
 
         {/* Tabs */}
         <div className="flex justify-center gap-2 mb-6">
           {([
-            ['all', 'All-time'],
-            ['month', 'This month'],
-            ['week', 'This week'],
+            ['all', dict.leaderboardPage.tabAll],
+            ['month', dict.leaderboardPage.tabMonth],
+            ['week', dict.leaderboardPage.tabWeek],
           ] as [Range, string][]).map(([key, label]) => (
             <Link
               key={key}
@@ -89,17 +91,17 @@ export default async function LeaderboardPage({
 
         {/* Table */}
         {entries.length === 0 ? (
-          <p className="text-center text-gray-500 py-12">No scores yet. Sign in and play a game!</p>
+          <p className="text-center text-gray-500 py-12">{dict.leaderboardPage.empty}</p>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left text-sm sm:text-base">
               <thead>
                 <tr className="border-b-2 border-black text-gray-700">
                   <th className="py-2 pr-2 w-12">#</th>
-                  <th className="py-2 pr-2">Player</th>
-                  <th className="py-2 pr-2 text-right">Points</th>
-                  <th className="py-2 pr-2 text-right hidden sm:table-cell">Games</th>
-                  <th className="py-2 pr-2 text-right hidden sm:table-cell">Correct</th>
+                  <th className="py-2 pr-2">{dict.leaderboardPage.colPlayer}</th>
+                  <th className="py-2 pr-2 text-right">{dict.leaderboardPage.colPoints}</th>
+                  <th className="py-2 pr-2 text-right hidden sm:table-cell">{dict.leaderboardPage.colGames}</th>
+                  <th className="py-2 pr-2 text-right hidden sm:table-cell">{dict.leaderboardPage.colCorrect}</th>
                 </tr>
               </thead>
               <tbody>
@@ -112,7 +114,7 @@ export default async function LeaderboardPage({
                       {e.avatar_url ? (
                         <img
                           src={e.avatar_url}
-                          alt=""
+                          alt={e.name || ''}
                           className="w-8 h-8 rounded-full border border-gray-300"
                         />
                       ) : (
@@ -133,7 +135,7 @@ export default async function LeaderboardPage({
         )}
 
         <p className="text-center text-xs text-gray-500 mt-6">
-          Only signed-in players (Google or Telegram) appear here. Anonymous nickname players are not tracked.
+          {dict.leaderboardPage.footer}
         </p>
       </div>
     </PageLayout>

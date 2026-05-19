@@ -3,10 +3,12 @@
 import { signIn } from 'next-auth/react';
 import { Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
+import { useTranslation } from 'react-i18next';
 import PageLayout from '@/components/PageLayout';
 import TelegramLoginButton from '@/components/TelegramLoginButton';
 
 function SignInInner() {
+  const { t } = useTranslation();
   const searchParams = useSearchParams();
   const callbackUrl = searchParams?.get('callbackUrl') || '/host';
 
@@ -14,10 +16,10 @@ function SignInInner() {
     <PageLayout gradient="home" maxWidth="md" showLogo={true} centerVertically>
       <div className="bg-white border-4 border-black rounded-2xl p-6 sm:p-8 shadow-xl text-center">
         <h1 className="text-2xl sm:text-3xl font-title text-black mb-2">
-          Host Sign In
+          {t('signIn.title')}
         </h1>
         <p className="text-sm text-gray-700 mb-6">
-          Sign in to host games. Players don&apos;t need an account.
+          {t('signIn.description')}
         </p>
 
         <button
@@ -30,12 +32,12 @@ function SignInInner() {
             <path fill="#4CAF50" d="M24 44c5.6 0 10.7-2.1 14.5-5.6l-6.7-5.5c-2 1.4-4.6 2.3-7.8 2.3-5.2 0-9.6-3.3-11.2-8l-6.5 5C9.5 39.6 16.2 44 24 44z"/>
             <path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.1-4 5.5l6.7 5.5C42.5 36.2 44 30.5 44 24c0-1.3-.1-2.4-.4-3.5z"/>
           </svg>
-          Sign in with Google
+          {t('signIn.google')}
         </button>
 
         <div className="flex items-center gap-3 my-4">
           <div className="flex-1 h-px bg-gray-300" />
-          <span className="text-xs text-gray-500 uppercase">or</span>
+          <span className="text-xs text-gray-500 uppercase">{t('signIn.or')}</span>
           <div className="flex-1 h-px bg-gray-300" />
         </div>
 
@@ -44,15 +46,15 @@ function SignInInner() {
         </div>
 
         <p className="text-sm text-gray-500 mt-6">
-          By signing in you agree to our{' '}
+          {t('signIn.termsPrefix')}
           <a href="https://atenu.org/terms-and-conditions/" className="underline">
-            Terms
-          </a>{' '}
-          and{' '}
-          <a href="https://atenu.org/privacy-policy/" className="underline">
-            Privacy Policy
+            {t('signIn.terms')}
           </a>
-          .
+          {t('signIn.termsAnd')}
+          <a href="https://atenu.org/privacy-policy/" className="underline">
+            {t('signIn.privacy')}
+          </a>
+          {t('signIn.termsSuffix')}
         </p>
       </div>
     </PageLayout>

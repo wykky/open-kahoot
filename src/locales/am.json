@@ -94,6 +94,29 @@
       "gamePin": "የጨዋታ ፒን"
     }
   },
+  "signIn": {
+    "title": "የአስተናጋጅ መግቢያ",
+    "description": "ጨዋታዎችን ለማስተናገድ ይግቡ። ተጫዋቾች መለያ አያስፈልጋቸውም።",
+    "google": "በ Google ይግቡ",
+    "or": "ወይም",
+    "termsPrefix": "በመግባት የእኛን ",
+    "terms": "የአጠቃቀም ውሎች",
+    "termsAnd": " እና ",
+    "privacy": "የግላዊነት ፖሊሲ",
+    "termsSuffix": " ይስማማሉ።"
+  },
+  "leaderboardPage": {
+    "title": "የውጤቶች ሰሌዳ",
+    "tabAll": "ሁልጊዜ",
+    "tabMonth": "በዚህ ወር",
+    "tabWeek": "በዚህ ሳምንት",
+    "empty": "እስካሁን ውጤት የለም። ግቡና ይጫወቱ!",
+    "colPlayer": "ተጫዋች",
+    "colPoints": "ነጥቦች",
+    "colGames": "ጨዋታዎች",
+    "colCorrect": "ትክክል",
+    "footer": "የገቡ ተጫዋቾች (Google ወይም Telegram) ብቻ እዚህ ይታያሉ። ስም ብቻ የሚጠቀሙ ተጫዋቾች አይታዩም።"
+  },
   "hostHistory": {
     "title": "የእኔ ጥያቄዎች",
     "newQuiz": "+ አዲስ ጥያቄ",
