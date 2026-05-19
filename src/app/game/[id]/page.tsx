@@ -371,6 +371,7 @@ export default function GamePage() {
         finalScores={state.finalScores}
         isHost={isHost}
         onDownloadLogs={downloadLogs}
+        gameId={gameId ?? undefined}
       />
     );
   }

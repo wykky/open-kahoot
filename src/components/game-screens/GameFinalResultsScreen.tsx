@@ -1,6 +1,7 @@
 'use client';
 
-import { LogOut, Download } from 'lucide-react';
+import { useState } from 'react';
+import { LogOut, Download, Share2, Check } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import PageLayout from '@/components/PageLayout';
 import Card from '@/components/Card';
@@ -11,16 +12,44 @@ interface GameFinalResultsScreenProps {
   finalScores: Player[];
   isHost: boolean;
   onDownloadLogs: () => void;
+  gameId?: string;
 }
 
-export default function GameFinalResultsScreen({ 
-  finalScores, 
-  isHost, 
-  onDownloadLogs 
+export default function GameFinalResultsScreen({
+  finalScores,
+  isHost,
+  onDownloadLogs,
+  gameId
 }: GameFinalResultsScreenProps) {
   const { t } = useTranslation();
-  
+  const [shareCopied, setShareCopied] = useState(false);
+
+  const handleShareResults = async () => {
+    if (!gameId) return;
+    const url = `${window.location.origin}/leaderboard/${gameId}`;
+    try {
+      await navigator.clipboard.writeText(url);
+    } catch {
+      // Older browsers / permission denied — fall back to a prompt so the
+      // host can still grab the URL by hand.
+      window.prompt('Copy this link:', url);
+    }
+    setShareCopied(true);
+    setTimeout(() => setShareCopied(false), 2000);
+  };
+
   const hostButtons = [
+    ...(gameId
+      ? [
+          {
+            text: shareCopied ? 'Copied!' : 'Share results',
+            onClick: handleShareResults,
+            icon: shareCopied ? Check : Share2,
+            iconPosition: 'left' as const,
+            variant: 'primary' as const
+          }
+        ]
+      : []),
     {
       text: t('screens.finalLeaderboard.downloadLogs'),
       onClick: onDownloadLogs,

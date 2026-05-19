@@ -435,6 +435,88 @@ export function getLeaderboard(opts: { sinceTs?: number; limit?: number } = {}):
     .all(sinceTs, limit) as LeaderboardEntry[];
 }
 
+/**
+ * Per-game leaderboard for the public /leaderboard/[gameId] share page.
+ *
+ * Unlike `getLeaderboard()` which only ranks signed-in users across many games,
+ * this returns EVERY non-host player in the given game — anonymous nicknames
+ * included. For a single-game permalink the nickname IS the identity, so
+ * filtering them out would gut the page.
+ *
+ * Score source: `players.final_score` (authoritative after the boot sweep + the
+ * `finishGame()` write). For mid-game / not-yet-finished games this still works
+ * but callers should gate on `getGameMetadata()` returning non-null first.
+ */
+export interface GameLeaderboardEntry {
+  player_id: string;
+  name: string;
+  avatar_url: string | null;
+  total_score: number;
+  correct_count: number;
+  total_answers: number;
+  is_signed_in: boolean;
+}
+
+export function getGameLeaderboard(gameId: string, opts: { limit?: number } = {}): GameLeaderboardEntry[] {
+  const limit = opts.limit ?? 20;
+  const rows = getDb()
+    .prepare(
+      `SELECT
+        p.id                                                       AS player_id,
+        p.name                                                     AS name,
+        u.avatar_url                                               AS avatar_url,
+        p.final_score                                              AS total_score,
+        COALESCE(SUM(CASE WHEN a.was_correct = 1 THEN 1 ELSE 0 END), 0) AS correct_count,
+        COALESCE(COUNT(a.question_index), 0)                       AS total_answers,
+        CASE WHEN p.user_id IS NOT NULL THEN 1 ELSE 0 END          AS is_signed_in
+       FROM players p
+       LEFT JOIN answers a ON a.player_id = p.id AND a.game_id = p.game_id
+       LEFT JOIN users u   ON u.id = p.user_id
+       WHERE p.game_id = ?
+         AND p.is_host = 0
+       GROUP BY p.id
+       ORDER BY total_score DESC, p.joined_at ASC
+       LIMIT ?`
+    )
+    .all(gameId, limit) as Array<Omit<GameLeaderboardEntry, 'is_signed_in'> & { is_signed_in: number }>;
+
+  return rows.map((r) => ({
+    player_id: r.player_id,
+    name: r.name,
+    avatar_url: r.avatar_url,
+    total_score: r.total_score,
+    correct_count: r.correct_count,
+    total_answers: r.total_answers,
+    is_signed_in: r.is_signed_in === 1,
+  }));
+}
+
+export interface GameMetadata {
+  title: string;
+  pin: string;
+  player_count: number;
+  finished_at: number;
+  question_count: number;
+}
+
+/**
+ * Returns the game's display metadata for the public share page.
+ * Returns null if the game doesn't exist OR isn't finished yet — this gates
+ * in-progress games from leaking via guessable IDs.
+ */
+export function getGameMetadata(gameId: string): GameMetadata | null {
+  const row = getDb()
+    .prepare(
+      `SELECT title, pin, player_count, finished_at, question_count
+       FROM games
+       WHERE id = ? AND finished_at IS NOT NULL`
+    )
+    .get(gameId) as
+    | { title: string; pin: string; player_count: number; finished_at: number; question_count: number }
+    | undefined;
+  return row ?? null;
+}
+
 // ============================================================================
 // BOOT
 // ============================================================================
