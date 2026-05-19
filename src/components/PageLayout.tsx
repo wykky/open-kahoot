@@ -51,7 +51,12 @@ export default function PageLayout({
       </div>
       <div className={`container mx-auto ${maxWidthClasses[maxWidth]}`}>
         {showLogo && (
-          <Link href="/" className={`text-4xl font-title mb-8 text-center ${textColor} block`}>Atenu Live</Link>
+          <Link
+            href="/"
+            className={`text-4xl font-title mb-8 mt-12 sm:mt-0 text-center ${textColor} block`}
+          >
+            Atenu Live
+          </Link>
         )}
         {children}
       </div>

@@ -119,6 +119,8 @@ export interface ServerToClientEvents {
   // Phase 2: emitted to all clients when the host disconnects (grace window started)
   hostReconnecting: (graceMs: number) => void;
   hostReconnected: () => void;
+  // Phase 7: emitted to a socket that's being kicked because the same playerId connected from elsewhere
+  kicked: (reason: string) => void;
 }
 
 // Auth for validateGame — caller may identify as host (with hostToken) or returning player (with playerId + playerToken).

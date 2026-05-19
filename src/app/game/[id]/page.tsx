@@ -255,6 +255,11 @@ export default function GamePage() {
     });
     socket.on('hostReconnecting', () => dispatch({ type: 'HOST_RECONNECTING', payload: true }));
     socket.on('hostReconnected', () => dispatch({ type: 'HOST_RECONNECTING', payload: false }));
+    socket.on('kicked', (reason: string) => {
+      // Phase 7: another device claimed this player's identity. Show msg + bounce home.
+      alert(reason || 'You were signed in from another device.');
+      router.push('/');
+    });
 
     return () => {
       socket.off('gameStarted');
@@ -270,6 +275,7 @@ export default function GamePage() {
       socket.off('waitForNextQuestion');
       socket.off('hostReconnecting');
       socket.off('hostReconnected');
+      socket.off('kicked');
     };
   }, [gameId, isHost, router, t]);
 

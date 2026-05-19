@@ -199,6 +199,7 @@ export class EventHandlers {
       const game = this.gameManager.createGame(socket.id, title, questions, settings, trustedUserId);
       const hostToken = issueHostToken(game.id, game.hostId);
       socket.join(game.id);
+      this.gameManager.attachSocket(socket.id, game.id); // Phase 7
       console.log(
         `[CREATE_GAME] Issued hostToken | PIN ${game.pin} | gameId=${game.id.slice(0, 8)}... | hostId=${game.hostId.slice(0, 8)}... | token prefix='${hostToken.slice(0, 12)}'`
       );
@@ -236,7 +237,21 @@ export class EventHandlers {
       const result = this.playerManager.joinGame(game, socket.id, playerName, persistentId, playerToken, trustedUserId);
       if (result.success && result.game) {
         socket.join(result.game.id);
+        this.gameManager.attachSocket(socket.id, result.game.id); // Phase 7
         this.gameManager.markActive(result.game.id); // Phase 5: idle GC
+
+        // Phase 7: single-active-session lock — kick the old socket if same player connected from elsewhere
+        if (result.kickedSocketId && result.kickedSocketId !== socket.id) {
+          const oldSocket = this.io.sockets.sockets.get(result.kickedSocketId);
+          if (oldSocket) {
+            oldSocket.emit('kicked', 'You were signed in from another device.');
+            // Detach + disconnect (will not trigger host-grace because non-host path)
+            this.gameManager.detachSocket(result.kickedSocketId);
+            oldSocket.disconnect(true);
+            console.log(`[PIN ${result.game.pin}] Kicked old socket ${result.kickedSocketId.slice(0, 8)} for player ${result.playerId?.slice(0, 8)}`);
+          }
+        }
+
         const connectedPlayers = this.playerManager.getConnectedPlayers(result.game).length;
         console.log(`[PIN ${result.game.pin}] Player ${result.isReconnection ? 'reconnected' : 'joined'} | Connected: ${connectedPlayers}`);
         const player = this.playerManager.getPlayerById(result.playerId!, result.game);
@@ -316,6 +331,7 @@ export class EventHandlers {
       }
 
       socket.join(game.id);
+      this.gameManager.attachSocket(socket.id, game.id); // Phase 7
       if (game.gameLoopActive) {
         this.gameplayLoop.syncPlayerToCurrentPhase(game, socket.id, isHost, isKnownPlayer);
       }
@@ -384,16 +400,17 @@ export class EventHandlers {
 
   private handleDisconnect(socket: Socket): void {
     try {
-      for (const game of this.gameManager.getAllGames()) {
-        const player = this.playerManager.getPlayerBySocketId(socket.id, game);
-        if (player) {
-          this.playerManager.disconnectPlayer(socket.id, game);
-          this.io.to(game.id).emit('playerDisconnected', player.id);
-          if (player.isHost) {
-            // Phase 2: don't kill the classroom on a wifi blip — start the grace timer.
-            this.gameplayLoop.startHostDisconnectGrace(game);
-          }
-          break;
+      // Phase 7: O(1) lookup via socketToGame index instead of iterating all games
+      const game = this.gameManager.getGameForSocket(socket.id);
+      this.gameManager.detachSocket(socket.id);
+      if (!game) return;
+      const player = this.playerManager.getPlayerBySocketId(socket.id, game);
+      if (player) {
+        this.playerManager.disconnectPlayer(socket.id, game);
+        this.io.to(game.id).emit('playerDisconnected', player.id);
+        if (player.isHost) {
+          // Phase 2: don't kill the classroom on a wifi blip — start the grace timer
+          this.gameplayLoop.startHostDisconnectGrace(game);
         }
       }
     } catch (error) {

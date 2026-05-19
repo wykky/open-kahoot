@@ -10,6 +10,7 @@ export interface JoinGameResult {
   playerToken?: string;
   isReconnection?: boolean;
   reason?: string; // diagnostic for debug logs
+  kickedSocketId?: string; // Phase 7: the OLD socket holding this player's identity, to be kicked
 }
 
 export class PlayerManager {
@@ -34,6 +35,11 @@ export class PlayerManager {
         if (!playerToken || !verifyPlayerToken(playerToken, game.id, persistentId)) {
           return { success: false, reason: 'invalid playerToken on reconnect' };
         }
+        // Phase 7: single-active-session lock — capture old socketId so the previous tab can be kicked
+        const kickedSocketId =
+          existingPlayer.socketId && existingPlayer.socketId !== socketId
+            ? existingPlayer.socketId
+            : undefined;
         existingPlayer.socketId = socketId;
         existingPlayer.isConnected = true;
         // Phase 4: refresh DB record (link userId if newly signed in)
@@ -44,6 +50,7 @@ export class PlayerManager {
           playerId: persistentId,
           playerToken,
           isReconnection: true,
+          kickedSocketId,
         };
       }
       // persistentId provided but no matching player → fall through to fresh join

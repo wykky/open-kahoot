@@ -9,6 +9,25 @@ const MAX_PIN_GENERATION_ATTEMPTS = 1000;
 export class GameManager {
   private games: Map<string, Game> = new Map();
   private gamesByPin: Map<string, string> = new Map(); // pin -> gameId
+  private socketToGame: Map<string, string> = new Map(); // Phase 7: O(1) disconnect lookup
+
+  /** Phase 7: associate a socket with a game so disconnect doesn't have to iterate all games. */
+  attachSocket(socketId: string, gameId: string): void {
+    this.socketToGame.set(socketId, gameId);
+  }
+
+  /** Phase 7: remove the association. Returns the previously-attached gameId (if any). */
+  detachSocket(socketId: string): string | undefined {
+    const gameId = this.socketToGame.get(socketId);
+    this.socketToGame.delete(socketId);
+    return gameId;
+  }
+
+  /** Phase 7: O(1) lookup of the Game for a given socket. */
+  getGameForSocket(socketId: string): Game | undefined {
+    const gameId = this.socketToGame.get(socketId);
+    return gameId ? this.games.get(gameId) : undefined;
+  }
 
   createGame(
     hostSocketId: string,
