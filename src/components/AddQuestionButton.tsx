@@ -22,7 +22,7 @@ export default function AddQuestionButton({ onAddQuestion, onAppendTSV, onOpenAI
           size="sm"
           icon={Plus}
         >
-          Add Question
+          Add question
         </Button>
 
         <div className="relative">

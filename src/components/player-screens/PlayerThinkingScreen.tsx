@@ -40,7 +40,7 @@ export default function PlayerThinkingScreen({ question }: PlayerThinkingScreenP
     <div className="text-center w-full flex flex-col items-center justify-center">
       <PendingLayout
         icon={Eye}
-        title="Get Ready!"
+        title="Get ready!"
         description="Look at the main screen and read the question"
         ignoreMinHeight
       />

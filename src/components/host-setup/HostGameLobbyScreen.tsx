@@ -94,7 +94,7 @@ export default function HostGameLobbyScreen({
               size="lg"
               icon={Play}
             >
-              Start Game
+              Start game
             </Button>
           </div>
           

@@ -52,7 +52,7 @@ export default function HostAIGenerationModal({
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={handleClose} title="AI Quiz Generation">
+    <Modal isOpen={isOpen} onClose={handleClose} title="AI quiz generation">
       <p className="text-gray-600 text-sm mb-6">
         Let AI create quiz questions for you! Select a language and enter a subject.
       </p>
@@ -83,7 +83,7 @@ export default function HostAIGenerationModal({
 
         <div className="space-y-2">
           <label className="block text-black text-sm font-medium">
-            Number of Questions
+            Number of questions
           </label>
           <input
             type="number"
@@ -105,7 +105,7 @@ export default function HostAIGenerationModal({
             size="md"
             icon={Sparkles}
           >
-            {isGenerating ? 'Generating...' : 'Generate Questions'}
+            {isGenerating ? 'Generating...' : 'Generate questions'}
           </Button>
         </div>
       </div>

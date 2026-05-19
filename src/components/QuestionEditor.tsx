@@ -218,7 +218,7 @@ export default function QuestionEditor({
             {!question.image && (
               <div className="text-center">
                 <Upload className="mx-auto h-8 w-8 text-gray-400" />
-                <span className="mt-2 text-sm text-gray-600">Upload Image</span>
+                <span className="mt-2 text-sm text-gray-600">Upload image</span>
               </div>
             )}
             {question.image && (

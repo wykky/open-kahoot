@@ -16,7 +16,7 @@ export default function HostEmptyQuestionsState({
 }: HostEmptyQuestionsStateProps) {
   return (
     <div className="bg-gray-50 rounded-lg p-8 border border-gray-300 text-center">
-      <p className="text-black text-lg mb-4 font-subtitle">Create Your First Question</p>
+      <p className="text-black text-lg mb-4 font-subtitle">Create your first question</p>
       <p className="text-gray-600 mb-6">Choose how you want to get started:</p>
 
       <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
@@ -26,7 +26,7 @@ export default function HostEmptyQuestionsState({
           size="lg"
           icon={Plus}
         >
-          Create Question
+          Create question
         </Button>
 
         <div className="text-gray-400 text-sm">or</div>
@@ -39,7 +39,7 @@ export default function HostEmptyQuestionsState({
             className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
           />
           <Button variant="primary" size="lg" icon={Upload}>
-            Import TSV File
+            Import TSV file
           </Button>
         </div>
 

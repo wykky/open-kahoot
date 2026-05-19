@@ -10,7 +10,6 @@ import {
   Users,
   Smartphone,
   Trophy,
-  Languages,
   HelpCircle,
   GraduationCap,
   MonitorCog,
@@ -46,7 +45,11 @@ const faqs: Faq[] = [
   },
   {
     q: 'How many players can join one game?',
-    a: 'A game is built for classroom-size groups — up to around 50 players works smoothly. More can join, but the experience may be choppy on slow connections.',
+    a: 'Atenu Live is calibrated for a full classroom — around 200 students on one school network works smoothly.',
+  },
+  {
+    q: 'Can students cheat by looking at their neighbour’s screen?',
+    a: 'Turn on "Shuffle answer order per player" in quiz settings. Each player then sees the four answers in a different random order, so peeking at the colour or letter on a nearby phone gives the wrong answer.',
   },
 ];
 
@@ -67,7 +70,7 @@ export default function HowItWorksPage() {
         {/* For hosts */}
         <section className="space-y-3">
           <h2 className="text-2xl font-title text-black flex items-center gap-2">
-            <MonitorCog className="w-6 h-6 text-yellow-600" />
+            <MonitorCog className="w-6 h-6 text-yellow-500" />
             For hosts (teachers)
           </h2>
           <ul className="list-disc pl-6 space-y-2 text-gray-800">
@@ -81,7 +84,7 @@ export default function HowItWorksPage() {
         {/* For players */}
         <section className="space-y-3">
           <h2 className="text-2xl font-title text-black flex items-center gap-2">
-            <Users className="w-6 h-6 text-yellow-600" />
+            <Users className="w-6 h-6 text-yellow-500" />
             For players (students)
           </h2>
           <ul className="list-disc pl-6 space-y-2 text-gray-800">
@@ -95,32 +98,28 @@ export default function HowItWorksPage() {
         {/* Scoring */}
         <section className="space-y-3">
           <h2 className="text-2xl font-title text-black flex items-center gap-2">
-            <Trophy className="w-6 h-6 text-yellow-600" />
+            <Trophy className="w-6 h-6 text-yellow-500" />
             Scoring
           </h2>
           <p className="text-gray-800">
             Each question is worth up to <span className="font-bold">1,000 points</span>.
-            Correct answers earn points; faster answers earn more. A wrong answer
-            scores zero. At the end of the game, the leaderboard ranks everyone
-            by total points — ties share the same rank.
+            Correct answers earn points; faster answers earn more. A correct answer at
+            the very last second still scores at least 500 points, so a slow connection
+            won&apos;t wipe out your score. A wrong or missed answer scores zero.
           </p>
-        </section>
-
-        {/* Languages */}
-        <section className="space-y-3">
-          <h2 className="text-2xl font-title text-black flex items-center gap-2">
-            <Languages className="w-6 h-6 text-yellow-600" />
-            Languages
-          </h2>
           <p className="text-gray-800">
-            Player screens are available in English, አማርኛ (Amharic), and Afaan Oromoo.
+            Get several correct answers in a row to build a streak bonus: <span className="font-bold">+100</span> for
+            two in a row, <span className="font-bold">+200</span> for three, up to <span className="font-bold">+500</span> at
+            six. The first player to submit a correct answer on each question earns an
+            extra <span className="font-bold">+100</span>. The final leaderboard ranks
+            everyone by total points; ties share the same rank.
           </p>
         </section>
 
         {/* Mobile-first */}
         <section className="space-y-3">
           <h2 className="text-2xl font-title text-black flex items-center gap-2">
-            <Smartphone className="w-6 h-6 text-yellow-600" />
+            <Smartphone className="w-6 h-6 text-yellow-500" />
             Built for phones
           </h2>
           <p className="text-gray-800">
@@ -134,7 +133,7 @@ export default function HowItWorksPage() {
         {/* About */}
         <section className="space-y-3">
           <h2 className="text-2xl font-title text-black flex items-center gap-2">
-            <GraduationCap className="w-6 h-6 text-yellow-600" />
+            <GraduationCap className="w-6 h-6 text-yellow-500" />
             About Atenu
           </h2>
           <p className="text-gray-800">
@@ -147,14 +146,14 @@ export default function HowItWorksPage() {
             >
               Atenu.org
             </a>
-            , free study tools for Ethiopian students preparing for ESSLCE.
+            , free study tools for Ethiopian high-school students preparing for ESSLCE.
           </p>
         </section>
 
         {/* FAQ */}
         <section className="space-y-3">
           <h2 className="text-2xl font-title text-black flex items-center gap-2">
-            <HelpCircle className="w-6 h-6 text-yellow-600" />
+            <HelpCircle className="w-6 h-6 text-yellow-500" />
             Frequently asked questions
           </h2>
           <dl className="space-y-4">

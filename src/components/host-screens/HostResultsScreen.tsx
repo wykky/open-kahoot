@@ -55,7 +55,7 @@ export default function HostResultsScreen({
           iconPosition="right"
           className="mx-auto"
         >
-          Show Leaderboard
+          Show leaderboard
         </Button>
       </div>
 

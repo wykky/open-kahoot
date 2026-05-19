@@ -84,7 +84,7 @@ export default function HostQuizCreationScreen({
                 size="lg"
                 icon={MonitorPlay}
               >
-                Create Game
+                Create game
               </Button>
             </div>
           </div>

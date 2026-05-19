@@ -14,7 +14,7 @@ function SignInInner() {
     <PageLayout gradient="home" maxWidth="md" showLogo={true} centerVertically>
       <div className="bg-white border-4 border-black rounded-2xl p-6 sm:p-8 shadow-xl text-center">
         <h1 className="text-2xl sm:text-3xl font-title text-black mb-2">
-          Host Sign In
+          Host sign in
         </h1>
         <p className="text-sm text-gray-700 mb-6">
           Sign in to host games. Players don&apos;t need an account.
