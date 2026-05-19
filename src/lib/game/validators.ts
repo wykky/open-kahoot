@@ -98,6 +98,9 @@ function validateSettings(s: unknown): string | null {
   if (S.showQuestionOnPlayers !== undefined && typeof S.showQuestionOnPlayers !== 'boolean') {
     return 'Invalid showQuestionOnPlayers';
   }
+  if (S.shuffleAnswers !== undefined && typeof S.shuffleAnswers !== 'boolean') {
+    return 'Invalid shuffleAnswers';
+  }
   return null;
 }
 

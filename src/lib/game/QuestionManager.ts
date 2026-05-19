@@ -100,6 +100,7 @@ export class QuestionManager {
       explanation: question.explanation,
       currentStreak: player.currentStreak ?? 0,
       streakBonus: player.streakBonus ?? 0,
+      firstCorrectBonus: player.firstCorrectBonus ?? 0,
     };
   }
 

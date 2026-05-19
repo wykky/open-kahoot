@@ -14,6 +14,8 @@ const DYSLEXIA_TIME_PENALTY_MULTIPLIER = 0.8;
 // streak 2 = +100, ..., streak 6+ = +500 capped. Reset to 0 on any wrong / no answer.
 const STREAK_BONUS_PER_STEP = 100;
 const STREAK_BONUS_MAX = 500;
+// Flat bonus for the player who submitted the earliest correct answer on a question.
+const FIRST_CORRECT_BONUS = 100;
 
 function streakBonusFor(streak: number): number {
   return Math.min(STREAK_BONUS_MAX, Math.max(0, (streak - 1) * STREAK_BONUS_PER_STEP));
@@ -62,6 +64,57 @@ export interface JoinGameResult {
 }
 
 export class PlayerManager {
+  // Per-game per-player per-question option permutations. Key: "playerId:questionIndex".
+  // Generated lazily on first emit to the player; consumed by translateAnswerIndex on submit.
+  // Lives only in memory — regenerated if the player reconnects on a fresh server.
+  private optionPermutations = new Map<string, Map<string, number[]>>();
+
+  private getOrCreatePermutation(gameId: string, playerId: string, questionIndex: number, optionCount: number): number[] {
+    let gameMap = this.optionPermutations.get(gameId);
+    if (!gameMap) {
+      gameMap = new Map();
+      this.optionPermutations.set(gameId, gameMap);
+    }
+    const key = `${playerId}:${questionIndex}`;
+    let perm = gameMap.get(key);
+    if (!perm) {
+      // Fisher-Yates. Math.random is fine here — this is anti-peek, not crypto.
+      perm = Array.from({ length: optionCount }, (_, i) => i);
+      for (let i = perm.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [perm[i], perm[j]] = [perm[j]!, perm[i]!];
+      }
+      gameMap.set(key, perm);
+    }
+    return perm;
+  }
+
+  /**
+   * Returns a question with options reordered for this player. Caller must use this
+   * when settings.shuffleAnswers is true; otherwise just pass the canonical question.
+   */
+  getShuffledQuestionForPlayer(game: Game, player: Player, question: Question): Question {
+    if (!game.settings.shuffleAnswers) return question;
+    const perm = this.getOrCreatePermutation(game.id, player.id, game.currentQuestionIndex, question.options.length);
+    return { ...question, options: perm.map((i) => question.options[i]!) };
+  }
+
+  /**
+   * Map a player's "what they clicked" index (in their shuffled space) back to the
+   * canonical option index used by question.correctAnswer.
+   */
+  translateAnswerIndex(game: Game, player: Player, clickedIndex: number): number {
+    if (!game.settings.shuffleAnswers) return clickedIndex;
+    const gameMap = this.optionPermutations.get(game.id);
+    const perm = gameMap?.get(`${player.id}:${game.currentQuestionIndex}`);
+    if (!perm) return clickedIndex; // No perm yet (shouldn't happen — emit always precedes submit)
+    return perm[clickedIndex] ?? clickedIndex;
+  }
+
+  clearOptionPermutations(gameId: string): void {
+    this.optionPermutations.delete(gameId);
+  }
+
   /**
    * Phase 2: joinGame requires a playerToken for reconnection.
    * - persistentId without a valid token → treated as a new join (rejected if mid-game)
@@ -189,7 +242,9 @@ export class PlayerManager {
       : this.getPlayerBySocketId(playerId, game);
     if (!player || player.isHost) return false;
     if (player.currentAnswer !== undefined) return false; // no double answers
-    player.currentAnswer = answerIndex;
+    // Translate from player's shuffled space to canonical (no-op if shuffleAnswers is off)
+    const canonicalIndex = this.translateAnswerIndex(game, player, answerIndex);
+    player.currentAnswer = canonicalIndex;
     player.answerTime = Date.now();
     if (typeof clientPerceivedMs === 'number' && clientPerceivedMs >= 0) {
       player.perceivedResponseMs = clientPerceivedMs; // Phase 8: adaptive scoring input
@@ -204,6 +259,9 @@ export class PlayerManager {
         delete player.answerTime;
         delete player.perceivedResponseMs;
         delete player.lastPointsEarned;
+        // streakBonus / firstCorrectBonus reset by next updateScores so they reflect
+        // the just-scored question while results phase is showing; don't clear here.
+        // currentStreak intentionally persists across clearAnswers.
       }
     });
   }
@@ -220,6 +278,14 @@ export class PlayerManager {
     if (game.scoredQuestions.includes(game.currentQuestionIndex)) return;
     game.scoredQuestions.push(game.currentQuestionIndex);
 
+    // First-correct: the earliest correct submitter. Use server-measured answerTime
+    // (not perceived) since perceived is a client-reported value, vulnerable to spoofing.
+    const correctPlayers = game.players.filter(
+      (p) => !p.isHost && p.currentAnswer === question.correctAnswer && p.answerTime !== undefined
+    );
+    correctPlayers.sort((a, b) => (a.answerTime ?? Infinity) - (b.answerTime ?? Infinity));
+    const firstCorrectId = correctPlayers[0]?.id;
+
     game.players.forEach((player) => {
       if (player.isHost) return;
       const basePoints = computeQuestionPoints(player, game, question);
@@ -227,10 +293,12 @@ export class PlayerManager {
 
       if (wasCorrect) {
         const newStreak = (player.currentStreak ?? 0) + 1;
-        const bonus = streakBonusFor(newStreak);
-        const totalEarned = basePoints + bonus;
+        const streakBonus = streakBonusFor(newStreak);
+        const firstCorrectBonus = player.id === firstCorrectId ? FIRST_CORRECT_BONUS : 0;
+        const totalEarned = basePoints + streakBonus + firstCorrectBonus;
         player.currentStreak = newStreak;
-        player.streakBonus = bonus;
+        player.streakBonus = streakBonus;
+        player.firstCorrectBonus = firstCorrectBonus;
         player.lastPointsEarned = totalEarned;
         player.score += totalEarned;
         const supportStatus = player.hasDyslexiaSupport ? ' (with dyslexia support)' : '';
@@ -240,14 +308,16 @@ export class PlayerManager {
           player.perceivedResponseMs >= 0 &&
           Math.abs(serverResponseMs - player.perceivedResponseMs) <= TRUST_WINDOW_MS &&
           player.perceivedResponseMs !== serverResponseMs;
-        const streakTag = bonus > 0 ? ` [streak ${newStreak} +${bonus}]` : '';
-        console.log(`[PIN ${game.pin}] ${player.name} +${totalEarned}${supportStatus}${usedClient ? ' [client-time]' : ''}${streakTag} | Total: ${player.score}`);
+        const streakTag = streakBonus > 0 ? ` [streak ${newStreak} +${streakBonus}]` : '';
+        const firstTag = firstCorrectBonus > 0 ? ` [first +${firstCorrectBonus}]` : '';
+        console.log(`[PIN ${game.pin}] ${player.name} +${totalEarned}${supportStatus}${usedClient ? ' [client-time]' : ''}${streakTag}${firstTag} | Total: ${player.score}`);
         try { updatePlayerScore(game.id, player.id, player.score); } catch (e) { console.error('[db] updatePlayerScore failed:', e); }
       } else {
         // Wrong / no answer breaks the streak. Cache 0 so getPersonalResult shows
         // the +0 outcome consistently with TSV row.
         player.currentStreak = 0;
         player.streakBonus = 0;
+        player.firstCorrectBonus = 0;
         player.lastPointsEarned = 0;
       }
     });

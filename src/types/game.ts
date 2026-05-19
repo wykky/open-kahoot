@@ -25,6 +25,10 @@ export interface GameSettings {
   thinkTime: number; // Time to show question before allowing answers (in seconds)
   answerTime: number; // Time allowed to answer (in seconds)
   showQuestionOnPlayers?: boolean; // If true, players see question + answers on their phones
+  // When true, each player sees A/B/C/D options in their own random order. Server stores
+  // a per-(player, question) permutation and translates submitted indices back to canonical.
+  // Anti-peek defense in classroom settings where students sit next to each other.
+  shuffleAnswers?: boolean;
 }
 
 export type GamePhase = 'waiting' | 'preparation' | 'thinking' | 'answering' | 'results' | 'leaderboard' | 'finished';
@@ -81,6 +85,8 @@ export interface Player {
   currentStreak?: number;
   // Bonus points earned from the streak on the last scored question (0 on streak 0 or 1).
   streakBonus?: number;
+  // +100 bonus when this player was the earliest correct submitter on the last scored question.
+  firstCorrectBonus?: number;
 }
 
 export interface GameStats {
@@ -105,6 +111,8 @@ export interface PersonalResult {
   // Kahoot-style consecutive-correct streak + bonus points from this question
   currentStreak?: number;
   streakBonus?: number;
+  // +100 if this player was the earliest correct submitter on this question
+  firstCorrectBonus?: number;
 }
 
 /**

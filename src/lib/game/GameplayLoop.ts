@@ -88,6 +88,7 @@ export class GameplayLoop {
     this.timerManager.clearAllTimers(gameId);
     this.phaseCallbacks.delete(gameId);
     this.clearHostDisconnectGrace(gameId);
+    this.playerManager.clearOptionPermutations(gameId);
     const game = this.gameManager.getGame(gameId);
     if (game) {
       game.gameLoopActive = false;
@@ -191,11 +192,16 @@ export class GameplayLoop {
 
     if (phase === 'thinking') {
       game.phaseStartTime = now - (game.settings.thinkTime * 1000 - remainingMs);
-      this.io.to(game.id).emit('thinkingPhase', question, remainingSec, {
-        serverNow: now,
-        deadlineMs,
-        qEpoch: game.qEpoch,
-      });
+      const deadline = { serverNow: now, deadlineMs, qEpoch: game.qEpoch };
+      if (game.settings.shuffleAnswers) {
+        game.players.forEach((p) => {
+          if (!p.isConnected) return;
+          const q = p.isHost ? question : this.playerManager.getShuffledQuestionForPlayer(game, p, question);
+          this.io.to(p.socketId).emit('thinkingPhase', q, remainingSec, deadline);
+        });
+      } else {
+        this.io.to(game.id).emit('thinkingPhase', question, remainingSec, deadline);
+      }
       this.timerManager.setThinkingPhaseTimer(game.id, () => {
         this.executePhase(game, 'answering');
       }, remainingSec);
@@ -277,11 +283,17 @@ export class GameplayLoop {
     game.qEpoch = (game.qEpoch ?? 0) + 1;
     const now = Date.now();
     const deadlineMs = now + game.settings.thinkTime * 1000;
-    this.io.to(game.id).emit('thinkingPhase', question, game.settings.thinkTime, {
-      serverNow: now,
-      deadlineMs,
-      qEpoch: game.qEpoch,
-    });
+    const deadline = { serverNow: now, deadlineMs, qEpoch: game.qEpoch };
+    if (game.settings.shuffleAnswers) {
+      // Per-player shuffled emit. Host gets the canonical order (projector view).
+      game.players.forEach((p) => {
+        if (!p.isConnected) return;
+        const q = p.isHost ? question : this.playerManager.getShuffledQuestionForPlayer(game, p, question);
+        this.io.to(p.socketId).emit('thinkingPhase', q, game.settings.thinkTime, deadline);
+      });
+    } else {
+      this.io.to(game.id).emit('thinkingPhase', question, game.settings.thinkTime, deadline);
+    }
     this.timerManager.setThinkingPhaseTimer(game.id, () => {
       this.executePhase(game, 'answering');
     }, game.settings.thinkTime);
@@ -430,9 +442,14 @@ export class GameplayLoop {
           const deadlineMs = (game.phaseStartTime || now) + game.settings.thinkTime * 1000;
           const remaining = Math.max(0, Math.floor((deadlineMs - now) / 1000));
           if (remaining > 0) {
+            // Shuffle to this specific player's permutation if shuffleAnswers is on.
+            const player = isHost ? undefined : game.players.find((p) => p.socketId === socketId);
+            const q = (game.settings.shuffleAnswers && player && !isHost)
+              ? this.playerManager.getShuffledQuestionForPlayer(game, player, question)
+              : question;
             // Phase 6: include the deadline payload so the reconnecting client can compute
             // clock skew and qEpoch protects against stale submissions.
-            this.io.to(socketId).emit('thinkingPhase', question, remaining, {
+            this.io.to(socketId).emit('thinkingPhase', q, remaining, {
               serverNow: now,
               deadlineMs,
               qEpoch: game.qEpoch ?? 0,
@@ -452,7 +469,11 @@ export class GameplayLoop {
           // up timer + qEpoch consistently before flipping to answering.
           const thinkNow = Date.now();
           const thinkDeadline = thinkNow + game.settings.thinkTime * 1000;
-          this.io.to(socketId).emit('thinkingPhase', currentQuestion, game.settings.thinkTime, {
+          const player = isHost ? undefined : game.players.find((p) => p.socketId === socketId);
+          const q = (game.settings.shuffleAnswers && player && !isHost)
+            ? this.playerManager.getShuffledQuestionForPlayer(game, player, currentQuestion)
+            : currentQuestion;
+          this.io.to(socketId).emit('thinkingPhase', q, game.settings.thinkTime, {
             serverNow: thinkNow,
             deadlineMs: thinkDeadline,
             qEpoch: game.qEpoch ?? 0,

@@ -91,12 +91,19 @@ export default function PlayerResultsScreen({
         <p className="text-3xl sm:text-4xl font-bold text-black">
           +{personalResult.pointsEarned}
         </p>
-        {/* Streak chip — only when there's a bonus (streak >= 2). Single correct gives streak=1 but bonus=0. */}
-        {(personalResult.streakBonus ?? 0) > 0 && (
-          <p className="text-sm mt-2 inline-flex items-center gap-1 px-3 py-1 rounded-full bg-yellow-400 text-black border-2 border-black font-bold">
-            🔥 {personalResult.currentStreak} {t('screens.results.streakLabel', { defaultValue: 'streak' })} · +{personalResult.streakBonus}
-          </p>
-        )}
+        {/* Bonus chips — only when earned this question. Streak chip needs streak ≥ 2 (single correct = streak=1, bonus=0). */}
+        <div className="flex flex-wrap justify-center gap-2 mt-2">
+          {(personalResult.streakBonus ?? 0) > 0 && (
+            <span className="text-sm inline-flex items-center gap-1 px-3 py-1 rounded-full bg-yellow-400 text-black border-2 border-black font-bold">
+              🔥 {personalResult.currentStreak} {t('screens.results.streakLabel', { defaultValue: 'streak' })} · +{personalResult.streakBonus}
+            </span>
+          )}
+          {(personalResult.firstCorrectBonus ?? 0) > 0 && (
+            <span className="text-sm inline-flex items-center gap-1 px-3 py-1 rounded-full bg-black text-yellow-400 border-2 border-black font-bold">
+              🥇 {t('screens.results.firstCorrectLabel', { defaultValue: 'First!' })} · +{personalResult.firstCorrectBonus}
+            </span>
+          )}
+        </div>
         <p className="text-gray-600 text-sm mt-1">{t('screens.results.totalScore')} {personalResult.totalScore}</p>
       </div>
 

@@ -73,6 +73,26 @@ export default function HostGameSettingsSection({
           </span>
         </label>
       </div>
+
+      {/* Shuffle-answers toggle */}
+      <div className="mt-6 pt-6 border-t border-gray-200">
+        <label className="flex items-start gap-3 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={gameSettings.shuffleAnswers ?? false}
+            onChange={(e) => onUpdateSettings({ ...gameSettings, shuffleAnswers: e.target.checked })}
+            className="mt-1 w-5 h-5 rounded border-2 border-black accent-yellow-400 cursor-pointer"
+          />
+          <span className="flex-1">
+            <span className="block text-black font-medium">
+              Shuffle answer order per player
+            </span>
+            <span className="block text-gray-600 text-sm mt-1">
+              When ON, each player sees A/B/C/D in their own random order. Stops students sitting next to each other from comparing answers — peeking gives the wrong shape/letter.
+            </span>
+          </span>
+        </label>
+      </div>
     </div>
   );
 }
