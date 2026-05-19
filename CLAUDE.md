@@ -1,13 +1,10 @@
 # Atenu Live — Claude Code handoff
 
-Copy this file to `~/open-kahoot/CLAUDE.md` and commit. It's the standing brief for any Claude Code session that picks up this project.
+Standing brief for any Claude Code (or Cowork / general agent) session that picks up this project. Sits at repo root so it's auto-loaded.
 
-```bash
-cp "/Users/wilfridnguessan/Documents/CLAUDE/Future ready sites/atenu-live-patches/CLAUDE.md" ~/open-kahoot/CLAUDE.md
-cd ~/open-kahoot && git add CLAUDE.md && git commit -m "Add CLAUDE.md project brief" && git push
-```
-
----
+**Repo location on Mac:** `/Users/wilfridnguessan/Documents/CLAUDE/Future ready sites/atenu-live/`
+**Repo on VPS:** `/opt/stack/atenu-live/`
+**Origin:** `github.com/wykky/open-kahoot`
 
 ## What this is
 
@@ -32,11 +29,17 @@ cd ~/open-kahoot && git add CLAUDE.md && git commit -m "Add CLAUDE.md project br
 
 ## How development & deployment works
 
-This is the canonical workflow we established. Don't reinvent it.
+Single-folder workflow. Edit in the repo directly, push, VPS pulls.
 
-1. **Edit on Mac.** The Mac copy of the repo is at `~/open-kahoot`. The user maintains a parallel "patches" folder at `/Users/wilfridnguessan/Documents/CLAUDE/Future ready sites/atenu-live-patches/` where Claude drafts changes; the user then `cp` them into the repo. This is a deliberate workflow — terminals can mangle large UTF-8 paste (especially Amharic) and the patches folder is a safer staging area.
-2. **Push:** `git add -A && git commit -m "..." && git push` from the Mac repo.
-3. **VPS pull + rebuild:** SSH `vps01`, `cd /opt/stack/atenu-live`, `git pull && docker compose build && docker compose up -d`. First build is ~90s (compiles `better-sqlite3` against Alpine musl).
+1. **Edit on Mac.** Repo is at `/Users/wilfridnguessan/Documents/CLAUDE/Future ready sites/atenu-live/`. Claude (Cowork / Claude Code) writes directly to these files.
+2. **Push:** `git add -A && git commit -m "..." && git push`.
+3. **VPS pull + rebuild:**
+   ```bash
+   ssh vps01
+   cd /opt/stack/atenu-live
+   git pull && docker compose build && docker compose up -d
+   ```
+   First build after a clean is ~90s (compiles `better-sqlite3` against Alpine musl). Subsequent rebuilds use Docker layer cache.
 4. **Verify:** `docker logs --tail 30 atenu-live | grep -iE "ready|idle-gc|allow-list"` should show:
    ```
    [server] Socket.io CORS allow-list: [ 'https://live.atenu.org' ]
@@ -308,4 +311,4 @@ If something regresses, `git bisect` between these is fast.
 
 ---
 
-**One-line summary if you only read this:** Next.js + Socket.io + SQLite multiplayer quiz, host-only Google/Telegram auth, server-authoritative deadlines with grace, HMAC tokens for both host and player, write-through persistence, automatic idle-game GC, single-session lock, leaderboard page. Mobile-first Ethiopian student audience on 3G/4G. Don't break the wire protocol; always update types + emits + handlers together. Patches drafted in `/Users/wilfridnguessan/Documents/CLAUDE/Future ready sites/atenu-live-patches/` then copied to `~/open-kahoot/` and pushed.
+**One-line summary if you only read this:** Next.js + Socket.io + SQLite multiplayer quiz, host-only Google/Telegram auth, server-authoritative deadlines with grace, HMAC tokens for both host and player, write-through persistence, automatic idle-game GC, single-session lock, leaderboard page. Mobile-first Ethiopian student audience on 3G/4G. Don't break the wire protocol; always update types + emits + handlers together. Repo at `/Users/wilfridnguessan/Documents/CLAUDE/Future ready sites/atenu-live/` on Mac, `/opt/stack/atenu-live/` on VPS, edits committed and pushed directly — no separate patches staging area.
