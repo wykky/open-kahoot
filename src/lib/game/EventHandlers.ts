@@ -50,8 +50,8 @@ export class EventHandlers {
           this.gameplayLoop.startGameLoop(game);
         });
       });
-      socket.on('submitAnswer', (gameId, questionId, answerIndex, persistentId, playerToken) => {
-        this.handleSubmitAnswer(socket, gameId, questionId, answerIndex, persistentId, playerToken);
+      socket.on('submitAnswer', (gameId, questionId, answerIndex, persistentId, playerToken, qEpoch) => {
+        this.handleSubmitAnswer(socket, gameId, questionId, answerIndex, persistentId, playerToken, qEpoch);
       });
       socket.on('nextQuestion', (gameId, hostToken) => {
         this.handleHostEvent(socket, gameId, hostToken, 'nextQuestion', (game) => {
@@ -334,7 +334,8 @@ export class EventHandlers {
     questionId: string,
     answerIndex: number,
     persistentId: string,
-    playerToken: string
+    playerToken: string,
+    qEpoch?: number
   ): void {
     const err = validateSubmitAnswerPayload(gameId, questionId, answerIndex, persistentId);
     if (err) {
@@ -350,7 +351,24 @@ export class EventHandlers {
       }
       const player = this.playerManager.getPlayerById(persistentId, game);
       if (!player || player.isHost) return;
-      if (game.phase !== 'answering') return;
+
+      // Phase 6: qEpoch check — stale answers from a previous question are rejected
+      if (typeof qEpoch === 'number' && game.qEpoch !== undefined && qEpoch !== game.qEpoch) {
+        console.warn(`[SUBMIT_ANSWER] Rejected from ${socket.id}: stale qEpoch ${qEpoch} (current ${game.qEpoch}) PIN ${game.pin}`);
+        return;
+      }
+
+      // Phase 6: late-answer grace — accept submissions up to deadline + grace even after server transitioned phase
+      const now = Date.now();
+      const withinAnswering = game.phase === 'answering';
+      const withinGrace =
+        game.phase === 'results' &&
+        game.answerDeadlineMs !== undefined &&
+        now <= game.answerDeadlineMs;
+      if (!withinAnswering && !withinGrace) {
+        return;
+      }
+
       const success = this.playerManager.submitAnswer(game, persistentId, answerIndex, true);
       if (success) {
         this.gameManager.markActive(game.id); // Phase 5: idle GC

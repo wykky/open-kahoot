@@ -19,6 +19,11 @@ const HOST_DISCONNECT_GRACE_MS = 5 * 60_000; // 5 minutes — enough time for ho
 const IDLE_GAME_TTL_MS = 2 * 60 * 60_000; // 2 hours
 const IDLE_SWEEP_INTERVAL_MS = 5 * 60_000; // check every 5 minutes
 
+// Phase 6: server-authoritative deadline + late-answer grace window
+// Client thinks the deadline is `deadlineMs`; server actually accepts up to `deadlineMs + ANSWER_GRACE_MS`.
+// This compensates for Ethiopian 3G/4G round-trip latency without enabling meaningful cheating.
+export const ANSWER_GRACE_MS = 1000;
+
 export class GameplayLoop {
   private phaseCallbacks: Map<string, (() => void) | null> = new Map();
   private hostDisconnectTimers: Map<string, NodeJS.Timeout> = new Map();
@@ -179,7 +184,15 @@ export class GameplayLoop {
       return;
     }
     console.log(`[PIN ${game.pin}] Thinking phase | Question: "${question.question.substring(0, 30)}${question.question.length > 30 ? '...' : ''}" | Duration: ${game.settings.thinkTime}s`);
-    this.io.to(game.id).emit('thinkingPhase', question, game.settings.thinkTime);
+    // Phase 6: bump qEpoch, send absolute deadline
+    game.qEpoch = (game.qEpoch ?? 0) + 1;
+    const now = Date.now();
+    const deadlineMs = now + game.settings.thinkTime * 1000;
+    this.io.to(game.id).emit('thinkingPhase', question, game.settings.thinkTime, {
+      serverNow: now,
+      deadlineMs,
+      qEpoch: game.qEpoch,
+    });
     this.timerManager.setThinkingPhaseTimer(game.id, () => {
       this.executePhase(game, 'answering');
     }, game.settings.thinkTime);
@@ -188,12 +201,23 @@ export class GameplayLoop {
   private executeAnsweringPhase(game: Game): void {
     const activePlayers = game.players.filter(p => !p.isHost && p.isConnected);
     console.log(`[PIN ${game.pin}] Answering phase | Duration: ${game.settings.answerTime}s | Active players: ${activePlayers.length}`);
-    this.gameManager.setQuestionStartTime(game.id, Date.now());
-    this.io.to(game.id).emit('answeringPhase', game.settings.answerTime);
+    const now = Date.now();
+    this.gameManager.setQuestionStartTime(game.id, now);
+    // Phase 6: bump qEpoch + send absolute deadline. Server-side accept window = deadline + grace.
+    game.qEpoch = (game.qEpoch ?? 0) + 1;
+    const deadlineMs = now + game.settings.answerTime * 1000;
+    game.answerDeadlineMs = deadlineMs + ANSWER_GRACE_MS;
+    this.io.to(game.id).emit('answeringPhase', game.settings.answerTime, {
+      serverNow: now,
+      deadlineMs,
+      qEpoch: game.qEpoch,
+    });
+    // Server expires phase at deadline + grace so late submissions still land
+    // setAnsweringPhaseTimer expects seconds; we add 1s grace (ANSWER_GRACE_MS = 1000)
     this.timerManager.setAnsweringPhaseTimer(game.id, () => {
-      console.log(`[PIN ${game.pin}] Answering time expired, moving to results`);
+      console.log(`[PIN ${game.pin}] Answering time + grace expired, moving to results`);
       this.executePhase(game, 'results');
-    }, game.settings.answerTime);
+    }, game.settings.answerTime + Math.ceil(ANSWER_GRACE_MS / 1000));
     this.phaseCallbacks.set(game.id, () => {
       const ap = game.players.filter(p => !p.isHost && p.isConnected);
       if (ap.length > 0 && this.questionManager.hasAllPlayersAnswered(game)) {

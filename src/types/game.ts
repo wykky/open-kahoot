@@ -46,6 +46,8 @@ export interface Game {
   gameLoopActive?: boolean; // Whether the gameplay loop is running
   answerHistory: AnswerRecord[]; // Historical record of all answers
   lastActivityAt?: number; // Updated on any meaningful event — used by idle-game GC
+  qEpoch?: number; // Phase 6: bumps on each thinking/answering phase entry; used to reject stale answers
+  answerDeadlineMs?: number; // Phase 6: server-side deadline incl. grace; for late-answer acceptance
 }
 
 export interface Player {
@@ -81,13 +83,24 @@ export interface PersonalResult {
   explanation?: string;
 }
 
+/**
+ * Phase 6: server-authoritative deadline protocol.
+ * Server sends absolute deadline + its own clock so clients can compute skew
+ * and render accurate countdowns regardless of network latency.
+ */
+export interface PhaseDeadline {
+  serverNow: number;      // server's Date.now() at emit time
+  deadlineMs: number;     // server's absolute deadline timestamp
+  qEpoch: number;         // monotonically increasing per phase entry; used to reject stale answers
+}
+
 // Socket Events
 export interface ServerToClientEvents {
   gameJoined: (game: Game) => void;
   gameStarted: (game: Game) => void;
   questionStarted: (question: Question, timeLimit: number) => void;
-  thinkingPhase: (question: Question, thinkTime: number) => void;
-  answeringPhase: (answerTime: number) => void;
+  thinkingPhase: (question: Question, thinkTime: number, deadline?: PhaseDeadline) => void;
+  answeringPhase: (answerTime: number, deadline?: PhaseDeadline) => void;
   questionEnded: (stats: GameStats) => void;
   hostResults: (stats: GameStats) => void;
   personalResult: (result: PersonalResult) => void;
@@ -142,7 +155,8 @@ export interface ClientToServerEvents {
     questionId: string,
     answerIndex: number,
     persistentId: string,
-    playerToken: string
+    playerToken: string,
+    qEpoch?: number
   ) => void;
   nextQuestion: (gameId: string, hostToken: string) => void;
   showLeaderboard: (gameId: string, hostToken: string) => void;

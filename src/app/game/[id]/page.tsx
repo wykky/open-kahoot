@@ -4,7 +4,7 @@ import { useEffect, useReducer } from 'react';
 import { useParams, useSearchParams, useRouter } from 'next/navigation';
 import { useTranslation } from 'react-i18next';
 import { getSocket } from '@/lib/socket-client';
-import type { Game, Question, GameStats, Player, PersonalResult, GamePhase } from '@/types/game';
+import type { Game, Question, GameStats, Player, PersonalResult, GamePhase, PhaseDeadline } from '@/types/game';
 // Game Screen Components
 import GameValidationScreen from '@/components/game-screens/GameValidationScreen';
 import GameErrorScreen from '@/components/game-screens/GameErrorScreen';
@@ -36,14 +36,15 @@ interface GameState {
   gameError: string | null;
   isValidating: boolean;
   hostReconnecting: boolean;
+  qEpoch: number | null; // Phase 6: stale-answer guard
 }
 
 type GameAction =
   | { type: 'SET_VALIDATING'; payload: boolean }
   | { type: 'SET_GAME_ERROR'; payload: string }
   | { type: 'SET_GAME_DATA'; payload: { game: Game; status: GamePhase } }
-  | { type: 'START_THINKING_PHASE'; payload: { question: Question; thinkTime: number } }
-  | { type: 'START_ANSWERING_PHASE'; payload: { answerTime: number } }
+  | { type: 'START_THINKING_PHASE'; payload: { question: Question; thinkTime: number; deadline?: PhaseDeadline } }
+  | { type: 'START_ANSWERING_PHASE'; payload: { answerTime: number; deadline?: PhaseDeadline } }
   | { type: 'SUBMIT_ANSWER'; payload: { answerIndex: number } }
   | { type: 'QUESTION_ENDED'; payload: GameStats }
   | { type: 'WAITING_FOR_RESULTS' }
@@ -64,20 +65,40 @@ function gameReducer(state: GameState, action: GameAction): GameState {
       return { ...state, game: action.payload.game, gameStatus: action.payload.status, isValidating: false };
     case 'GAME_STARTED':
       return { ...state, game: action.payload, gameStatus: 'preparation' };
-    case 'START_THINKING_PHASE':
+    case 'START_THINKING_PHASE': {
+      // Phase 6: derive timeLeft from server's absolute deadline if available, fall back to thinkTime
+      let timeLeft = action.payload.thinkTime;
+      if (action.payload.deadline) {
+        const skew = Date.now() - action.payload.deadline.serverNow;
+        timeLeft = Math.max(0, Math.ceil((action.payload.deadline.deadlineMs + skew - Date.now()) / 1000));
+      }
       return {
         ...state,
         currentQuestion: action.payload.question,
-        timeLeft: action.payload.thinkTime,
+        timeLeft,
         phase: 'thinking',
         selectedAnswer: null,
         hasAnswered: false,
         questionStats: null,
         personalResult: null,
         gameStatus: 'thinking',
+        qEpoch: action.payload.deadline?.qEpoch ?? state.qEpoch,
       };
-    case 'START_ANSWERING_PHASE':
-      return { ...state, timeLeft: action.payload.answerTime, phase: 'answering', gameStatus: 'answering' };
+    }
+    case 'START_ANSWERING_PHASE': {
+      let timeLeft = action.payload.answerTime;
+      if (action.payload.deadline) {
+        const skew = Date.now() - action.payload.deadline.serverNow;
+        timeLeft = Math.max(0, Math.ceil((action.payload.deadline.deadlineMs + skew - Date.now()) / 1000));
+      }
+      return {
+        ...state,
+        timeLeft,
+        phase: 'answering',
+        gameStatus: 'answering',
+        qEpoch: action.payload.deadline?.qEpoch ?? state.qEpoch,
+      };
+    }
     case 'SUBMIT_ANSWER':
       return { ...state, selectedAnswer: action.payload.answerIndex, hasAnswered: true };
     case 'QUESTION_ENDED':
@@ -119,6 +140,7 @@ const initialState: GameState = {
   gameError: null,
   isValidating: true,
   hostReconnecting: false,
+  qEpoch: null,
 };
 
 export default function GamePage() {
@@ -200,11 +222,11 @@ export default function GamePage() {
     }
 
     socket.on('gameStarted', (gameData: Game) => dispatch({ type: 'GAME_STARTED', payload: gameData }));
-    socket.on('thinkingPhase', (question: Question, thinkTime: number) =>
-      dispatch({ type: 'START_THINKING_PHASE', payload: { question, thinkTime } })
+    socket.on('thinkingPhase', (question: Question, thinkTime: number, deadline?: PhaseDeadline) =>
+      dispatch({ type: 'START_THINKING_PHASE', payload: { question, thinkTime, deadline } })
     );
-    socket.on('answeringPhase', (answerTime: number) =>
-      dispatch({ type: 'START_ANSWERING_PHASE', payload: { answerTime } })
+    socket.on('answeringPhase', (answerTime: number, deadline?: PhaseDeadline) =>
+      dispatch({ type: 'START_ANSWERING_PHASE', payload: { answerTime, deadline } })
     );
     socket.on('questionEnded', () => dispatch({ type: 'WAITING_FOR_RESULTS' }));
     socket.on('personalResult', (result: PersonalResult) =>
@@ -275,7 +297,15 @@ export default function GamePage() {
       return;
     }
     const socket = getSocket();
-    socket.emit('submitAnswer', gameId, state.currentQuestion.id, answerIndex, persistentId, playerToken);
+    socket.emit(
+      'submitAnswer',
+      gameId,
+      state.currentQuestion.id,
+      answerIndex,
+      persistentId,
+      playerToken,
+      state.qEpoch ?? undefined
+    );
   };
 
   const getHostToken = (): string => {
