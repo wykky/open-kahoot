@@ -128,6 +128,7 @@ export class EventHandlers {
       return;
     }
     try {
+      this.gameManager.markActive(game.id); // Phase 5: idle GC — any host action keeps the game alive
       action(game);
     } catch (error) {
       console.error(`[${eventName}] Error:`, error);
@@ -235,6 +236,7 @@ export class EventHandlers {
       const result = this.playerManager.joinGame(game, socket.id, playerName, persistentId, playerToken, trustedUserId);
       if (result.success && result.game) {
         socket.join(result.game.id);
+        this.gameManager.markActive(result.game.id); // Phase 5: idle GC
         const connectedPlayers = this.playerManager.getConnectedPlayers(result.game).length;
         console.log(`[PIN ${result.game.pin}] Player ${result.isReconnection ? 'reconnected' : 'joined'} | Connected: ${connectedPlayers}`);
         const player = this.playerManager.getPlayerById(result.playerId!, result.game);
@@ -351,6 +353,7 @@ export class EventHandlers {
       if (game.phase !== 'answering') return;
       const success = this.playerManager.submitAnswer(game, persistentId, answerIndex, true);
       if (success) {
+        this.gameManager.markActive(game.id); // Phase 5: idle GC
         this.io.to(game.id).emit('playerAnswered', player.id);
         this.gameplayLoop.onPlayerAnswered(game);
       }

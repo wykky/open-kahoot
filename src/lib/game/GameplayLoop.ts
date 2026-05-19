@@ -15,9 +15,14 @@ import { TimerManager } from './TimerManager';
 // Tunable: longer = friendlier for flaky wifi, shorter = faster cleanup of dead games.
 const HOST_DISCONNECT_GRACE_MS = 5 * 60_000; // 5 minutes — enough time for host to reopen browser, find the URL, and resume
 
+// Phase 5: idle-game GC — auto-finish games with no activity for this long
+const IDLE_GAME_TTL_MS = 2 * 60 * 60_000; // 2 hours
+const IDLE_SWEEP_INTERVAL_MS = 5 * 60_000; // check every 5 minutes
+
 export class GameplayLoop {
   private phaseCallbacks: Map<string, (() => void) | null> = new Map();
   private hostDisconnectTimers: Map<string, NodeJS.Timeout> = new Map();
+  private idleSweepInterval: NodeJS.Timeout | null = null;
 
   constructor(
     private io: SocketIOServer<ClientToServerEvents, ServerToClientEvents>,
@@ -25,7 +30,43 @@ export class GameplayLoop {
     private playerManager: PlayerManager,
     private questionManager: QuestionManager,
     private timerManager: TimerManager
-  ) {}
+  ) {
+    this.startIdleSweep();
+  }
+
+  /**
+   * Phase 5: periodic sweep — finish games with no activity for IDLE_GAME_TTL_MS.
+   * Runs every IDLE_SWEEP_INTERVAL_MS. Cleared on shutdown.
+   */
+  private startIdleSweep(): void {
+    this.idleSweepInterval = setInterval(() => {
+      const cutoff = Date.now() - IDLE_GAME_TTL_MS;
+      for (const game of this.gameManager.getAllGames()) {
+        if (game.status === 'finished') continue;
+        const last = game.lastActivityAt ?? game.phaseStartTime ?? 0;
+        if (last > 0 && last < cutoff) {
+          const idleMin = Math.round((Date.now() - last) / 60_000);
+          console.log(`[idle-gc] Finishing idle game PIN ${game.pin} (idle ${idleMin}m, phase=${game.phase})`);
+          // If the loop is active, transition normally; otherwise direct cleanup
+          if (game.gameLoopActive) {
+            this.transitionToPhase(game, 'finished');
+          } else {
+            this.executeFinishedPhase(game);
+          }
+        }
+      }
+    }, IDLE_SWEEP_INTERVAL_MS);
+    // Don't block process exit on this timer
+    if (this.idleSweepInterval.unref) this.idleSweepInterval.unref();
+    console.log(`[idle-gc] Started — sweep every ${IDLE_SWEEP_INTERVAL_MS / 60_000}m, TTL ${IDLE_GAME_TTL_MS / 60_000}m`);
+  }
+
+  stopIdleSweep(): void {
+    if (this.idleSweepInterval) {
+      clearInterval(this.idleSweepInterval);
+      this.idleSweepInterval = null;
+    }
+  }
 
   startGameLoop(game: Game): void {
     if (game.gameLoopActive) {
@@ -103,6 +144,7 @@ export class GameplayLoop {
     console.log(`[PIN ${game.pin}] Phase: ${phase} | Question: ${game.currentQuestionIndex + 1}/${game.questions.length} | Players: ${game.players.filter(p => !p.isHost && p.isConnected).length}`);
     this.gameManager.updateGamePhase(game.id, phase);
     game.phaseStartTime = Date.now();
+    this.gameManager.markActive(game.id); // Phase 5: idle GC
     switch (phase) {
       case 'preparation': this.executePreprationPhase(game); break;
       case 'thinking':    this.executeThinkingPhase(game); break;

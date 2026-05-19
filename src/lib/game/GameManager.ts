@@ -43,6 +43,9 @@ export class GameManager {
       answerHistory: []
     };
 
+    // Phase 5: track activity for idle GC
+    game.lastActivityAt = Date.now();
+
     this.games.set(gameId, game);
     this.gamesByPin.set(pin, gameId);
 
@@ -55,6 +58,15 @@ export class GameManager {
     }
 
     return game;
+  }
+
+  /**
+   * Phase 5: mark game as having activity right now. Used by idle-game GC to
+   * decide when to auto-finish abandoned games.
+   */
+  markActive(gameId: string): void {
+    const game = this.games.get(gameId);
+    if (game) game.lastActivityAt = Date.now();
   }
 
   getGame(gameId: string): Game | undefined {

@@ -45,6 +45,7 @@ export interface Game {
   phaseEndTime?: number;
   gameLoopActive?: boolean; // Whether the gameplay loop is running
   answerHistory: AnswerRecord[]; // Historical record of all answers
+  lastActivityAt?: number; // Updated on any meaningful event — used by idle-game GC
 }
 
 export interface Player {
