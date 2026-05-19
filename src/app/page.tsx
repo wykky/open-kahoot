@@ -1,6 +1,7 @@
 'use client';
 
 import { useTranslation } from 'react-i18next';
+import Link from 'next/link';
 import { MonitorCog, MonitorPlay } from 'lucide-react';
 import PageLayout from '@/components/PageLayout';
 import Hero from '@/components/Hero';
@@ -31,6 +32,16 @@ export default function Home() {
           description={t('home.host.description')}
           buttonText={t('home.host.button')}
         />
+      </div>
+
+      {/* "New here?" link */}
+      <div className="text-center mt-8">
+        <Link
+          href="/how-it-works"
+          className="text-sm text-gray-700 underline underline-offset-4 hover:text-black"
+        >
+          New here? How it works →
+        </Link>
       </div>
     </PageLayout>
   );

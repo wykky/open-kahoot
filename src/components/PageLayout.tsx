@@ -34,9 +34,13 @@ export default function PageLayout({
 
   const isPurpleBackground = gradient === 'leaderboard' || gradient === 'finished';
   const textColor = isPurpleBackground ? 'text-white' : 'text-black';
+  const footerTextColor = isPurpleBackground ? 'text-white/70' : 'text-gray-700';
+  const footerLinkHover = isPurpleBackground ? 'hover:text-white' : 'hover:text-black';
+
+  const currentYear = new Date().getFullYear();
 
   return (
-    <div className={`min-h-screen ${gradientClasses[gradient]} p-8 ${centerVertically ? 'flex flex-col justify-center' : ''} relative`}>
+    <div className={`min-h-screen ${gradientClasses[gradient]} p-8 flex flex-col ${centerVertically ? 'justify-center' : ''} relative`}>
       <div className="absolute top-4 right-4 z-50 flex items-center gap-1.5">
         <Link
           href="/leaderboard"
@@ -49,7 +53,7 @@ export default function PageLayout({
         <UserMenu />
         <LanguageSelector />
       </div>
-      <div className={`container mx-auto ${maxWidthClasses[maxWidth]}`}>
+      <div className={`container mx-auto ${maxWidthClasses[maxWidth]} ${centerVertically ? '' : 'flex-1'}`}>
         {showLogo && (
           <Link
             href="/"
@@ -60,6 +64,36 @@ export default function PageLayout({
         )}
         {children}
       </div>
+      <footer
+        className={`mt-8 sm:mt-16 text-center text-xs sm:text-sm ${footerTextColor}`}
+      >
+        <ul className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2">
+          <li>
+            <Link href="/how-it-works" className={`underline-offset-2 hover:underline ${footerLinkHover}`}>
+              How it works
+            </Link>
+          </li>
+          <li aria-hidden="true">·</li>
+          <li>
+            <Link href="/leaderboard" className={`underline-offset-2 hover:underline ${footerLinkHover}`}>
+              Leaderboard
+            </Link>
+          </li>
+          <li aria-hidden="true">·</li>
+          <li>
+            <a
+              href="https://atenu.org"
+              target="_blank"
+              rel="noopener"
+              className={`underline-offset-2 hover:underline ${footerLinkHover}`}
+            >
+              Atenu.org
+            </a>
+          </li>
+          <li aria-hidden="true">·</li>
+          <li>© {currentYear} Atenu Live</li>
+        </ul>
+      </footer>
     </div>
   );
 }
