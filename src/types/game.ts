@@ -184,4 +184,5 @@ export interface ClientToServerEvents {
   toggleDyslexiaSupport: (gameId: string, playerId: string, hostToken: string) => void;
   kickPlayer: (gameId: string, playerId: string, hostToken: string) => void;
   skipQuestion: (gameId: string, hostToken: string) => void;
+  restartQuestion: (gameId: string, hostToken: string) => void;
 }

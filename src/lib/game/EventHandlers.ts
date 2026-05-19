@@ -172,6 +172,17 @@ export class EventHandlers {
           this.gameplayLoop.transitionToPhase(game, 'results');
         });
       });
+      socket.on('restartQuestion', (gameId, hostToken) => {
+        this.handleHostEvent(socket, gameId, hostToken, 'restartQuestion', (game) => {
+          // Limit to thinking/answering — by results phase, points are already in
+          // player.score / scoredQuestions / DB, so a clean undo gets complicated.
+          if (game.phase !== 'thinking' && game.phase !== 'answering') {
+            return;
+          }
+          this.playerManager.clearAnswers(game);
+          this.gameplayLoop.transitionToPhase(game, 'thinking');
+        });
+      });
       socket.on('toggleDyslexiaSupport', (gameId, playerId, hostToken) => {
         this.handleHostEvent(socket, gameId, hostToken, 'toggleDyslexiaSupport', (game) => {
           if (typeof playerId !== 'string' || playerId.length === 0 || playerId.length > LIMITS.ID_MAX) {

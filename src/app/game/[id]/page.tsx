@@ -16,24 +16,35 @@ import GameWaitingForResultsScreen from '@/components/game-screens/GameWaitingFo
 import GameAnsweringPhaseScreen from '@/components/game-screens/GameAnsweringPhaseScreen';
 import GameResultsPhaseScreen from '@/components/game-screens/GameResultsPhaseScreen';
 import GameFallbackScreen from '@/components/game-screens/GameFallbackScreen';
-import { SkipForward } from 'lucide-react';
+import { SkipForward, RotateCcw } from 'lucide-react';
 
 /**
- * Small overlay button rendered on the host's thinking/answering screens.
- * Skips the rest of the current question and jumps to results — useful when
- * the host can see everyone has already answered or wants to move on early.
+ * Small overlay buttons rendered on the host's thinking/answering screens.
+ * Skip jumps to results; Restart re-runs the same question from thinking
+ * (clears all answers, bumps qEpoch). Both are stacked bottom-right.
  */
-function SkipQuestionButton({ onSkip }: { onSkip: () => void }) {
+function HostPhaseControls({ onSkip, onRestart }: { onSkip: () => void; onRestart: () => void }) {
   return (
-    <button
-      onClick={onSkip}
-      aria-label="Skip question"
-      title="Skip to results"
-      className="fixed bottom-4 right-4 z-50 px-4 py-2 bg-black/80 text-white text-sm rounded-lg shadow-lg hover:bg-black backdrop-blur-sm flex items-center gap-2"
-    >
-      <SkipForward className="w-4 h-4" />
-      Skip
-    </button>
+    <div className="fixed bottom-4 right-4 z-50 flex flex-col gap-2">
+      <button
+        onClick={() => { if (confirm('Restart this question? All current answers will be cleared.')) onRestart(); }}
+        aria-label="Restart question"
+        title="Restart this question"
+        className="px-4 py-2 bg-black/80 text-white text-sm rounded-lg shadow-lg hover:bg-black backdrop-blur-sm flex items-center gap-2"
+      >
+        <RotateCcw className="w-4 h-4" />
+        Restart
+      </button>
+      <button
+        onClick={onSkip}
+        aria-label="Skip question"
+        title="Skip to results"
+        className="px-4 py-2 bg-black/80 text-white text-sm rounded-lg shadow-lg hover:bg-black backdrop-blur-sm flex items-center gap-2"
+      >
+        <SkipForward className="w-4 h-4" />
+        Skip
+      </button>
+    </div>
   );
 }
 
@@ -379,6 +390,12 @@ export default function GamePage() {
     socket.emit('skipQuestion', gameId, getHostToken());
   };
 
+  const restartQuestion = () => {
+    const socket = getSocket();
+    if (!gameId) return;
+    socket.emit('restartQuestion', gameId, getHostToken());
+  };
+
   if (state.isValidating) return <GameValidationScreen />;
   if (state.gameError) return <GameErrorScreen error={state.gameError} />;
   if (state.gameStatus === 'waiting' || state.gameStatus === 'preparation') {
@@ -413,7 +430,7 @@ export default function GamePage() {
           isHost={isHost}
           isPlayer={isPlayer}
         />
-        {isHost && <SkipQuestionButton onSkip={skipQuestion} />}
+        {isHost && <HostPhaseControls onSkip={skipQuestion} onRestart={restartQuestion} />}
       </>
     );
   }
@@ -432,7 +449,7 @@ export default function GamePage() {
           onSubmitAnswer={submitAnswer}
           hasAnswered={state.hasAnswered}
         />
-        {isHost && <SkipQuestionButton onSkip={skipQuestion} />}
+        {isHost && <HostPhaseControls onSkip={skipQuestion} onRestart={restartQuestion} />}
       </>
     );
   }
