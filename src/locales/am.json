@@ -88,6 +88,9 @@
     }
   },
   "screens": {
+    "kicked": {
+      "anotherDevice": "ከሌላ መሣሪያ ገብተዋል።"
+    },
     "playerWaiting": {
       "title": "መልስዎ ተመዝግቧል!",
       "description": "መልስዎ ተቀብሏል። ሌሎች ተጫዋቾች እስኪጨርሱ ይጠብቁ።"

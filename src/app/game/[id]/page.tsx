@@ -261,7 +261,9 @@ export default function GamePage() {
     socket.on('hostReconnected', () => dispatch({ type: 'HOST_RECONNECTING', payload: false }));
     socket.on('kicked', (reason: string) => {
       // Phase 7: another device claimed this player's identity. Show msg + bounce home.
-      alert(reason || 'You were signed in from another device.');
+      // Server sends English `reason` for logs; player-facing message comes from i18n.
+      alert(t('screens.kicked.anotherDevice'));
+      console.warn('[client] kicked:', reason);
       router.push('/');
     });
 

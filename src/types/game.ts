@@ -51,6 +51,11 @@ export interface Game {
   // Question indices already passed through PlayerManager.updateScores. Makes updateScores
   // idempotent so we can call it defensively from executeFinishedPhase without double-credit.
   scoredQuestions?: number[];
+  // Pause state when host disconnects mid-thinking / mid-answering. Captured on disconnect,
+  // consumed on reconnect: the phase timer is restarted with `pauseRemainingMs` left and
+  // qEpoch bumps to invalidate any answers submitted during the gap.
+  pauseRemainingMs?: number;
+  pausedPhase?: 'thinking' | 'answering';
 }
 
 export interface Player {

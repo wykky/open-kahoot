@@ -13,8 +13,11 @@ import type { Question, Game } from '@/types/game';
  * Smooth single-transition timer bar.
  * Starts at 100% on mount and animates linearly to 0% over `totalSeconds`.
  * No tick-based jumping — the bar visibly drains to empty before the next phase renders.
+ * Below URGENT_THRESHOLD_SEC remaining, the bar flips red for tension.
  */
-function SmoothTimerBar({ totalSeconds, resetKey }: { totalSeconds: number; resetKey: string | number }) {
+const URGENT_THRESHOLD_SEC = 5;
+
+function SmoothTimerBar({ totalSeconds, timeLeft, resetKey }: { totalSeconds: number; timeLeft: number; resetKey: string | number }) {
   const [width, setWidth] = useState('100%');
   const raf = useRef<number | null>(null);
   useEffect(() => {
@@ -25,11 +28,12 @@ function SmoothTimerBar({ totalSeconds, resetKey }: { totalSeconds: number; rese
     });
     return () => { if (raf.current) cancelAnimationFrame(raf.current); };
   }, [resetKey, totalSeconds]);
+  const barColor = timeLeft <= URGENT_THRESHOLD_SEC ? 'bg-red-500' : accent.bg;
   return (
     <div className="w-full bg-gray-200 rounded-full h-3 mt-4 overflow-hidden">
       <div
-        className={`${accent.bg} h-3 rounded-full`}
-        style={{ width, transition: `width ${totalSeconds}s linear` }}
+        className={`${barColor} h-3 rounded-full`}
+        style={{ width, transition: `width ${totalSeconds}s linear, background-color 500ms` }}
       />
     </div>
   );
@@ -75,6 +79,7 @@ export default function GameAnsweringPhaseScreen({
           </p>
           <SmoothTimerBar
             totalSeconds={game?.settings.answerTime || 30}
+            timeLeft={timeLeft}
             resetKey={currentQuestion.id}
           />
           {/* timeLeft preserved for accessibility */}

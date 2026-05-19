@@ -109,9 +109,14 @@ export class GameplayLoop {
    * Phase 2: start a grace window when the host disconnects.
    * If the host doesn't return before HOST_DISCONNECT_GRACE_MS, the game is finished.
    * A reconnecting host (validated via hostToken) should call clearHostDisconnectGrace.
+   *
+   * Also pauses an in-flight thinking/answering phase: the timer would otherwise keep
+   * ticking and advance the question while the host is offline, so the host returns to
+   * a leaderboard for a question they never saw scored.
    */
   startHostDisconnectGrace(game: Game): void {
     if (this.hostDisconnectTimers.has(game.id)) return; // already running
+    this.pauseForHostDisconnect(game);
     console.log(`[PIN ${game.pin}] Host disconnected — starting ${HOST_DISCONNECT_GRACE_MS / 1000}s grace window`);
     this.io.to(game.id).emit('hostReconnecting', HOST_DISCONNECT_GRACE_MS);
     const t = setTimeout(() => {
@@ -131,7 +136,91 @@ export class GameplayLoop {
       if (game) {
         console.log(`[PIN ${game.pin}] Host reconnected — grace cleared`);
         this.io.to(gameId).emit('hostReconnected');
+        this.resumeAfterHostReconnect(game);
       }
+    }
+  }
+
+  /**
+   * Pause an in-flight thinking/answering phase. Captures remaining time, clears the
+   * phase timer, and suspends the all-answered early-end callback so a player submitting
+   * during the gap doesn't accidentally advance to results.
+   */
+  private pauseForHostDisconnect(game: Game): void {
+    if (game.phase !== 'thinking' && game.phase !== 'answering') return;
+    const totalMs = game.phase === 'thinking'
+      ? game.settings.thinkTime * 1000
+      : game.settings.answerTime * 1000 + ANSWER_GRACE_MS;
+    const startedAt = game.phase === 'thinking' ? game.phaseStartTime : game.questionStartTime;
+    const elapsed = Date.now() - (startedAt || Date.now());
+    const remaining = Math.max(0, totalMs - elapsed);
+    if (remaining <= 0) return;
+    game.pauseRemainingMs = remaining;
+    game.pausedPhase = game.phase;
+    const timerType = game.phase === 'thinking'
+      ? TimerManager.TIMER_TYPES.THINKING_PHASE
+      : TimerManager.TIMER_TYPES.ANSWERING_PHASE;
+    this.timerManager.clearTimer(game.id, timerType);
+    this.phaseCallbacks.set(game.id, null);
+    console.log(`[PIN ${game.pin}] Paused ${game.phase} phase (${Math.round(remaining / 1000)}s remaining) on host disconnect`);
+  }
+
+  /**
+   * Restart a paused phase after the host returns. Bumps qEpoch so answers submitted
+   * during the disconnect window (which the client UI should have suppressed via
+   * `hostReconnecting`, but we don't trust the client) are rejected as stale.
+   *
+   * Adjusts phaseStartTime / questionStartTime forward by the pause duration so scoring
+   * stays consistent: post-resume answerers get correct response-time math; players who
+   * already answered before / during the pause clamp-to-0 → full points (a small bonus
+   * for being fast and unlucky enough to coincide with the disconnect).
+   */
+  private resumeAfterHostReconnect(game: Game): void {
+    const remainingMs = game.pauseRemainingMs;
+    const phase = game.pausedPhase;
+    delete game.pauseRemainingMs;
+    delete game.pausedPhase;
+    if (!remainingMs || !phase || game.phase !== phase) return;
+    const question = this.questionManager.getCurrentQuestion(game);
+    if (!question) return;
+
+    game.qEpoch = (game.qEpoch ?? 0) + 1;
+    const now = Date.now();
+    const remainingSec = Math.max(1, Math.ceil(remainingMs / 1000));
+    const deadlineMs = now + remainingMs;
+
+    if (phase === 'thinking') {
+      game.phaseStartTime = now - (game.settings.thinkTime * 1000 - remainingMs);
+      this.io.to(game.id).emit('thinkingPhase', question, remainingSec, {
+        serverNow: now,
+        deadlineMs,
+        qEpoch: game.qEpoch,
+      });
+      this.timerManager.setThinkingPhaseTimer(game.id, () => {
+        this.executePhase(game, 'answering');
+      }, remainingSec);
+      console.log(`[PIN ${game.pin}] Resumed thinking with ${remainingSec}s left (qEpoch=${game.qEpoch})`);
+    } else {
+      game.questionStartTime = now - (game.settings.answerTime * 1000 - remainingMs);
+      game.answerDeadlineMs = deadlineMs;
+      this.io.to(game.id).emit('answeringPhase', remainingSec, {
+        serverNow: now,
+        deadlineMs,
+        qEpoch: game.qEpoch,
+      });
+      this.timerManager.setAnsweringPhaseTimer(game.id, () => {
+        console.log(`[PIN ${game.pin}] Answering time + grace expired, moving to results`);
+        this.executePhase(game, 'results');
+      }, remainingSec);
+      this.phaseCallbacks.set(game.id, () => {
+        const ap = game.players.filter(p => !p.isHost && p.isConnected);
+        if (ap.length > 0 && this.questionManager.hasAllPlayersAnswered(game)) {
+          console.log(`[PIN ${game.pin}] All players answered (post-resume), ending answering phase early`);
+          this.timerManager.clearTimer(game.id, TimerManager.TIMER_TYPES.ANSWERING_PHASE);
+          this.executePhase(game, 'results');
+        }
+      });
+      console.log(`[PIN ${game.pin}] Resumed answering with ${remainingSec}s left (qEpoch=${game.qEpoch})`);
     }
   }
 
@@ -337,9 +426,18 @@ export class GameplayLoop {
         }
         const question = this.questionManager.getCurrentQuestion(game);
         if (question) {
-          const elapsed = Date.now() - (game.phaseStartTime || 0);
-          const remaining = Math.max(0, game.settings.thinkTime - Math.floor(elapsed / 1000));
-          if (remaining > 0) this.io.to(socketId).emit('thinkingPhase', question, remaining);
+          const now = Date.now();
+          const deadlineMs = (game.phaseStartTime || now) + game.settings.thinkTime * 1000;
+          const remaining = Math.max(0, Math.floor((deadlineMs - now) / 1000));
+          if (remaining > 0) {
+            // Phase 6: include the deadline payload so the reconnecting client can compute
+            // clock skew and qEpoch protects against stale submissions.
+            this.io.to(socketId).emit('thinkingPhase', question, remaining, {
+              serverNow: now,
+              deadlineMs,
+              qEpoch: game.qEpoch ?? 0,
+            });
+          }
         }
         break;
       }
@@ -350,12 +448,27 @@ export class GameplayLoop {
         }
         const currentQuestion = this.questionManager.getCurrentQuestion(game);
         if (currentQuestion) {
-          this.io.to(socketId).emit('thinkingPhase', currentQuestion, game.settings.thinkTime);
+          // Briefly show the thinking screen with full deadline payload so the client wires
+          // up timer + qEpoch consistently before flipping to answering.
+          const thinkNow = Date.now();
+          const thinkDeadline = thinkNow + game.settings.thinkTime * 1000;
+          this.io.to(socketId).emit('thinkingPhase', currentQuestion, game.settings.thinkTime, {
+            serverNow: thinkNow,
+            deadlineMs: thinkDeadline,
+            qEpoch: game.qEpoch ?? 0,
+          });
           const delay = isHost ? 2000 : 100;
           setTimeout(() => {
-            const elapsed = Date.now() - (game.questionStartTime || 0);
-            const remaining = Math.max(0, game.settings.answerTime - Math.floor(elapsed / 1000));
-            if (remaining > 0) this.io.to(socketId).emit('answeringPhase', remaining);
+            const now = Date.now();
+            const deadlineMs = (game.questionStartTime || now) + game.settings.answerTime * 1000;
+            const remaining = Math.max(0, Math.floor((deadlineMs - now) / 1000));
+            if (remaining > 0) {
+              this.io.to(socketId).emit('answeringPhase', remaining, {
+                serverNow: now,
+                deadlineMs,
+                qEpoch: game.qEpoch ?? 0,
+              });
+            }
           }, delay);
         }
         break;

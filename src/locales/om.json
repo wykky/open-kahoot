@@ -88,6 +88,9 @@
     }
   },
   "screens": {
+    "kicked": {
+      "anotherDevice": "Meeshaa biraa irraa galtee jirta."
+    },
     "playerWaiting": {
       "title": "Deebiin galmeeffame!",
       "description": "Deebiin kee fudhatame. Taphattoonni biroo akka xumuranii eegi."

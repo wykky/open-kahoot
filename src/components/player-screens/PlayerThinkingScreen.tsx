@@ -21,7 +21,7 @@ export default function PlayerThinkingScreen({ question }: PlayerThinkingScreenP
             <div className="mb-4 flex justify-center">
               <img
                 src={question.image}
-                alt=""
+                alt={question.question}
                 className="max-h-48 rounded-lg object-contain"
               />
             </div>

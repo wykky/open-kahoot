@@ -4,6 +4,11 @@ import { useTranslation } from 'react-i18next';
 import { getChoiceColor } from '@/lib/palette';
 import type { Question } from '@/types/game';
 
+// Kahoot-style shape per tile: redundant encoding for colorblind students and
+// readability across a classroom. Shape + letter + color is triple-redundant.
+const CHOICE_SHAPES = ['▲', '◆', '●', '■'] as const;
+const CHOICE_LETTERS = ['A', 'B', 'C', 'D'] as const;
+
 interface PlayerAnsweringScreenProps {
   onSubmitAnswer: (answerIndex: number) => void;
   question?: Question;
@@ -25,7 +30,7 @@ export default function PlayerAnsweringScreen({
             <div className="mb-3 sm:mb-4 flex justify-center">
               <img
                 src={question.image}
-                alt=""
+                alt={question.question}
                 className="max-h-24 sm:max-h-40 rounded-lg object-contain"
               />
             </div>
@@ -33,16 +38,20 @@ export default function PlayerAnsweringScreen({
           <h2 className="text-base sm:text-2xl font-bold text-black text-center mb-3 sm:mb-6 leading-snug px-2 break-words">
             {question?.question}
           </h2>
-          {/* Answer buttons with letter + option text */}
+          {/* Answer buttons with shape + letter + option text */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-4 flex-1">
             {(question?.options ?? ['', '', '', '']).map((optionText, index) => (
               <button
                 key={index}
                 onClick={() => onSubmitAnswer(index)}
+                aria-label={`${CHOICE_LETTERS[index]}: ${optionText}`}
                 className={`min-h-14 sm:min-h-24 rounded-xl font-bold text-white transition-all transform active:scale-95 sm:hover:scale-105 border-4 ${getChoiceColor(index)} px-3 sm:px-4 py-2 sm:py-3 flex items-center gap-2 sm:gap-3 text-left overflow-hidden`}
               >
-                <span className="flex-shrink-0 w-9 h-9 sm:w-12 sm:h-12 rounded-full bg-white/30 flex items-center justify-center text-lg sm:text-2xl">
-                  {['A', 'B', 'C', 'D'][index]}
+                <span
+                  className="flex-shrink-0 w-9 h-9 sm:w-12 sm:h-12 rounded-full bg-white/30 flex items-center justify-center text-lg sm:text-2xl"
+                  aria-hidden="true"
+                >
+                  {CHOICE_SHAPES[index]}
                 </span>
                 <span className="flex-1 text-sm sm:text-lg leading-tight break-words line-clamp-3">
                   {optionText}
@@ -53,18 +62,20 @@ export default function PlayerAnsweringScreen({
         </>
       ) : (
         <>
-          {/* Classroom mode — only colored A/B/C/D buttons */}
+          {/* Classroom mode — shape + letter, no option text (question is on the host screen) */}
           <h2 className="text-3xl text-black text-center mb-8 font-subtitle">
             {t('screens.answering.playerTitle')}
           </h2>
           <div className="grid grid-cols-2 gap-4 flex-1">
-            {['A', 'B', 'C', 'D'].map((letter, index) => (
+            {CHOICE_LETTERS.map((letter, index) => (
               <button
                 key={letter}
                 onClick={() => onSubmitAnswer(index)}
-                className={`h-full min-h-32 rounded-xl font-bold text-4xl text-white transition-all transform hover:scale-105 border-4 ${getChoiceColor(index)} hover:scale-105`}
+                aria-label={`Option ${letter}`}
+                className={`h-full min-h-32 rounded-xl font-bold text-white transition-all transform hover:scale-105 border-4 ${getChoiceColor(index)} flex flex-col items-center justify-center gap-2`}
               >
-                {letter}
+                <span className="text-6xl leading-none" aria-hidden="true">{CHOICE_SHAPES[index]}</span>
+                <span className="text-3xl">{letter}</span>
               </button>
             ))}
           </div>

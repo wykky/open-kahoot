@@ -4,6 +4,9 @@ import { Clock, Eye } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { palette } from '@/lib/palette';
 
+// Below this remaining-seconds threshold, the bar flips red to signal urgency.
+const URGENT_THRESHOLD_SEC = 5;
+
 interface TimerProps {
   timeLeft: number;
   totalTime: number;
@@ -20,9 +23,11 @@ export default function Timer({
   className = '',
 }: TimerProps) {
   const Icon = variant === 'thinking' ? Eye : Clock;
-  const progressColor = variant === 'thinking' ? palette.accent.bg : palette.timer.answering;
-  const iconColor = 'text-black';
-  const labelColor = variant === 'thinking' ? 'text-black' : 'text-gray-600';
+  const defaultColor = variant === 'thinking' ? palette.accent.bg : palette.timer.answering;
+  const urgent = timeLeft <= URGENT_THRESHOLD_SEC;
+  const progressColor = urgent ? 'bg-red-500' : defaultColor;
+  const iconColor = urgent ? 'text-red-600' : 'text-black';
+  const labelColor = urgent ? 'text-red-600 font-semibold' : (variant === 'thinking' ? 'text-black' : 'text-gray-600');
 
   // Smooth single-transition bar: 100% → 0% over totalTime, restart whenever totalTime changes.
   const [width, setWidth] = useState('100%');
@@ -39,13 +44,13 @@ export default function Timer({
   return (
     <div className={`text-center mb-8 ${className}`}>
       <div className="flex items-center justify-center gap-2 mb-4">
-        <Icon className={`w-8 h-8 ${iconColor}`} />
+        <Icon className={`w-8 h-8 ${iconColor} transition-colors duration-500`} />
       </div>
-      <p className={`${labelColor} text-lg`}>{label}</p>
+      <p className={`${labelColor} text-lg transition-colors duration-500`}>{label}</p>
       <div className={`w-full ${palette.timer.progress} rounded-full h-3 mt-4 overflow-hidden`}>
         <div
-          className={`${progressColor} h-3 rounded-full`}
-          style={{ width, transition: `width ${totalTime}s linear` }}
+          className={`${progressColor} h-3 rounded-full transition-colors duration-500`}
+          style={{ width, transition: `width ${totalTime}s linear, background-color 500ms` }}
         />
       </div>
       <span className="sr-only">{timeLeft} seconds remaining</span>

@@ -48,7 +48,7 @@ export default function HostAnsweringScreen({
       {/* Question Image */}
       {currentQuestion.image && (
         <div className="mb-8">
-          <Image src={currentQuestion.image} alt="Question" width={600} height={400} className="max-h-64 w-auto mx-auto rounded-lg" />
+          <Image src={currentQuestion.image} alt={currentQuestion.question} width={600} height={400} className="max-h-64 w-auto mx-auto rounded-lg" />
         </div>
       )}
 

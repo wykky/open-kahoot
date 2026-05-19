@@ -88,6 +88,9 @@
     }
   },
   "screens": {
+    "kicked": {
+      "anotherDevice": "You were signed in from another device."
+    },
     "playerWaiting": {
       "title": "Answer submitted!",
       "description": "Your answer has been received. Waiting for other players to finish answering before results are shown."
