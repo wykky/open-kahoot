@@ -69,8 +69,11 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         const botToken = process.env.TELEGRAM_BOT_TOKEN;
         if (!botToken) return null;
         if (!verifyTelegramAuth(data, botToken)) return null;
+        // Telegram's spec permits up to 1 day, but a leaked payload (logs, referer,
+        // browser history) stays replayable until then. 300s is plenty for slow 3G logins.
+        const MAX_AUTH_AGE_SECONDS = 300;
         const authDate = parseInt(data.auth_date, 10);
-        if (!authDate || Math.abs(Date.now() / 1000 - authDate) > 86400) {
+        if (!authDate || Math.abs(Date.now() / 1000 - authDate) > MAX_AUTH_AGE_SECONDS) {
           return null;
         }
         const displayName =

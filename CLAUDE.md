@@ -80,6 +80,17 @@ GAME_SECRET=<openssl rand -base64 32>
 
 `server.ts` reads `ALLOWED_ORIGINS` and rejects all other origins via Socket.io CORS. `GAME_SECRET` is separate from `AUTH_SECRET` so we can rotate independently.
 
+### Sensitive secrets — leak impact + rotation
+
+- **`AUTH_SECRET`** — signs every NextAuth JWT. Leak ⇒ session forgery for every signed-in user. Rotation invalidates all existing sessions; everyone has to sign in again.
+- **`GAME_SECRET`** — HMAC key for host + player tokens. Leak ⇒ attacker can forge `hostToken` / `playerToken` for any active game. Rotation invalidates in-flight games (hosts get kicked back to lobby on next action). Safe to rotate between sessions.
+- **`TELEGRAM_BOT_TOKEN`** — IS the HMAC verification key for Telegram Login Widget payloads (`auth.ts` derives the secret as `sha256(botToken)`). Leak ⇒ attacker can forge a valid Telegram login for any Telegram `id` and become a host. JWT sessions survive rotation (they're signed by `AUTH_SECRET`), so existing logins keep working — only new forgeries are blocked. Rotation runbook:
+  1. On phone: open BotFather → `/mybots` → `atenu_live_bot` → `API Token` → `Revoke current token`. Copy new token.
+  2. `ssh vps01 && cd /opt/stack/atenu-live && nano .env.local` → replace `TELEGRAM_BOT_TOKEN=...` → save.
+  3. `docker compose up -d --force-recreate` (env-only change, no rebuild needed).
+  4. Verify: `docker logs --tail 30 atenu-live | grep -i ready`. Test sign-in from incognito window.
+- **`GOOGLE_CLIENT_SECRET`** — Leak ⇒ attacker can build a phishing app posing as Atenu Live to harvest tokens. Rotate via Google Cloud Console; existing sessions survive.
+
 ## Auth model (important to understand)
 
 - **Players** can join anonymously with just a nickname. They get a `persistentId` (UUID) + `playerToken` (HMAC) stored in `localStorage` per-PIN. No account needed.

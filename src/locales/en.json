@@ -69,8 +69,6 @@
     "aiModal": {
       "title": "AI Quiz Generation",
       "description": "Let AI create quiz questions for you! Select a language and enter a subject.",
-      "accessKey": "Access Key",
-      "accessKeyPlaceholder": "Enter AI generation access key",
       "language": "Language",
       "english": "English",
       "french": "Français",
@@ -79,8 +77,7 @@
       "generating": "Generating...",
       "generateQuestions": "Generate Questions",
       "warning": "⚠️ AI-generated content may contain inaccuracies. Please review and verify all questions before use.",
-      "errorSubject": "Please enter a subject for the quiz.",
-      "errorAccessKey": "Please enter the AI generation access key."
+      "errorSubject": "Please enter a subject for the quiz."
     },
     "lobby": {
       "players": "Players",

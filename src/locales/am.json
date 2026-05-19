@@ -69,8 +69,6 @@
     "aiModal": {
       "title": "በ AI የጨዋታ ጥያቄ ማመንጨት",
       "description": "AI ለእርስዎ የጥያቄ መልሶችን ይፍጠር! ቋንቋ ይምረጡና ርዕስ ያስገቡ።",
-      "accessKey": "የመዳረሻ ቁልፍ",
-      "accessKeyPlaceholder": "የ AI ማመንጫ መዳረሻ ቁልፍ ያስገቡ",
       "language": "ቋንቋ",
       "english": "English",
       "french": "Français",
@@ -79,8 +77,7 @@
       "generating": "በማመንጨት ላይ...",
       "generateQuestions": "ጥያቄዎችን ይፍጠሩ",
       "warning": "⚠️ በ AI የተፈጠረ ይዘት ስህተት ሊኖረው ይችላል። ከመጠቀምዎ በፊት ሁሉንም ጥያቄዎች ይፈትሹ።",
-      "errorSubject": "ለጥያቄው ርዕስ ያስገቡ።",
-      "errorAccessKey": "የ AI ማመንጫ መዳረሻ ቁልፍ ያስገቡ።"
+      "errorSubject": "ለጥያቄው ርዕስ ያስገቡ።"
     },
     "lobby": {
       "players": "ተጫዋቾች",

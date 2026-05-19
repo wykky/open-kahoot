@@ -11,18 +11,17 @@ import { accent } from '@/lib/palette';
 interface HostAIGenerationModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onGenerateQuestions: (subject: string, language: 'english' | 'french', accessKey: string, questionCount: number) => Promise<void>;
+  onGenerateQuestions: (subject: string, language: 'english' | 'french', questionCount: number) => Promise<void>;
 }
 
-export default function HostAIGenerationModal({ 
+export default function HostAIGenerationModal({
   isOpen,
   onClose,
-  onGenerateQuestions 
+  onGenerateQuestions
 }: HostAIGenerationModalProps) {
   const { t } = useTranslation();
   const [subject, setSubject] = useState('');
   const [language, setLanguage] = useState<'english' | 'french'>('english');
-  const [accessKey, setAccessKey] = useState('');
   const [questionCount, setQuestionCount] = useState(5);
   const [isGenerating, setIsGenerating] = useState(false);
 
@@ -37,17 +36,10 @@ export default function HostAIGenerationModal({
       return;
     }
 
-    if (!accessKey.trim()) {
-      alert(t('host.aiModal.errorAccessKey'));
-      return;
-    }
-
     setIsGenerating(true);
     try {
-      await onGenerateQuestions(subject, language, accessKey, questionCount);
-      // Reset form and close modal on success
+      await onGenerateQuestions(subject, language, questionCount);
       setSubject('');
-      setAccessKey('');
       setQuestionCount(5);
       onClose();
     } finally {
@@ -68,16 +60,6 @@ export default function HostAIGenerationModal({
       </p>
 
       <div className="space-y-4">
-
-        <Input
-        label={t('host.aiModal.accessKey')}
-        type="password"
-        placeholder={t('host.aiModal.accessKeyPlaceholder')}
-        value={accessKey}
-        onChange={(e) => setAccessKey(e.target.value)}
-        disabled={isGenerating}
-        />
-
         <div className="space-y-2">
           <label className="block text-black text-sm font-medium">
             {t('host.aiModal.language')}
@@ -119,7 +101,7 @@ export default function HostAIGenerationModal({
         <div className="flex justify-center pt-2">
           <Button
             onClick={handleGenerate}
-            disabled={!subject.trim() || !accessKey.trim() || isGenerating}
+            disabled={!subject.trim() || isGenerating}
             loading={isGenerating}
             variant="primary"
             size="md"
@@ -136,4 +118,3 @@ export default function HostAIGenerationModal({
     </Modal>
   );
 }
-

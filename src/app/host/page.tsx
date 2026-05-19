@@ -348,14 +348,13 @@ export default function HostPage() {
   const handleGenerateAIQuestions = async (
     subject: string,
     language: 'english' | 'french',
-    accessKey: string,
     questionCount: number = 5
   ) => {
     try {
       const response = await fetch('/api/generate-questions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ subject, language, accessKey, questionCount }),
+        body: JSON.stringify({ subject, language, questionCount }),
       });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || t('host.quizCreation.failedToGenerate'));

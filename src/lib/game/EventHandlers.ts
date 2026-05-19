@@ -8,7 +8,6 @@ import type {
   ValidateGameAuth,
 } from '@/types/game';
 import { GameManager, sanitizeGameForClient } from './GameManager';
-import { getGameTsv, getGamePin } from '@/lib/db';
 import { PlayerManager } from './PlayerManager';
 import { QuestionManager } from './QuestionManager';
 import { GameplayLoop } from './GameplayLoop';
@@ -136,7 +135,10 @@ export class EventHandlers {
     }
   }
 
-  // ===== downloadGameLogs (with DB fallback for finished games no longer in memory) =====
+  // ===== downloadGameLogs =====
+  // Live or recently-finished games only. Once the in-memory game is gone (60s after
+  // finished), use the authenticated HTTP route at /api/games/[id]/tsv — it does a
+  // SQL ownership check that this socket path can't (no NextAuth session attached).
 
   private handleDownloadGameLogs(socket: Socket, gameId: string, hostToken: unknown): void {
     if (validateGameId(gameId)) {
@@ -144,32 +146,18 @@ export class EventHandlers {
       return;
     }
     try {
-      // First try in-memory (live or recently-finished games)
       const game = this.gameManager.getGame(gameId);
-      if (game) {
-        if (!verifyHostToken(hostToken, game.id, game.hostId)) {
-          socket.emit('error', 'Not authorized');
-          return;
-        }
-        const tsvData = this.playerManager.generateGameLogsTSV(game);
-        const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-        socket.emit('gameLogs', tsvData, `game_${game.pin}_${timestamp}.tsv`);
+      if (!game) {
+        socket.emit('error', 'Game not found or expired — use /host/history');
         return;
       }
-      // Fallback: DB lookup for older finished games
-      // We can't verify hostToken without game.hostId. Re-derive from the DB if needed —
-      // for now, we trust the token-bearer if the DB tsv exists (token is unforgeable).
-      // To verify properly, we'd need to also fetch host_player_id from DB. Add a guard:
-      const tsv = getGameTsv(gameId);
-      const pin = getGamePin(gameId);
-      if (!tsv || !pin) {
-        socket.emit('error', 'Game not found');
+      if (!verifyHostToken(hostToken, game.id, game.hostId)) {
+        socket.emit('error', 'Not authorized');
         return;
       }
-      // Without in-memory hostId we can't strictly verify, but the gameId itself is hard to guess.
-      // For tighter security we'd fetch host_player_id from DB and verifyHostToken. Phase 5 TODO.
+      const tsvData = this.playerManager.generateGameLogsTSV(game);
       const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-      socket.emit('gameLogs', tsv, `game_${pin}_${timestamp}.tsv`);
+      socket.emit('gameLogs', tsvData, `game_${game.pin}_${timestamp}.tsv`);
     } catch (error) {
       console.error('[DOWNLOAD_LOGS] Error:', error);
       socket.emit('error', 'Failed to download logs');

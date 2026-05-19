@@ -69,8 +69,6 @@
     "aiModal": {
       "title": "AI Tapha Gaaffii Oomishuu",
       "description": "AI gaaffilee tapha siif uumee! Afaan filadhuutii mata duree galchi.",
-      "accessKey": "Furtuu Galmaa",
-      "accessKeyPlaceholder": "Furtuu galmaa AI oomishuu galchi",
       "language": "Afaan",
       "english": "English",
       "french": "Français",
@@ -79,8 +77,7 @@
       "generating": "Oomishaa jira...",
       "generateQuestions": "Gaaffilee Oomishi",
       "warning": "⚠️ Qabiyyeen AI'n oomishame dogoggora qabaachuu danda'a. Itti fayyadamuu dura hunda ilaali.",
-      "errorSubject": "Mata duree tapha galchi.",
-      "errorAccessKey": "Furtuu galmaa AI oomishuu galchi."
+      "errorSubject": "Mata duree tapha galchi."
     },
     "lobby": {
       "players": "Taphattoota",

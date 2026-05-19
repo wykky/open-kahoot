@@ -1,8 +1,17 @@
+/**
+ * Authenticated OpenAI question generation.
+ *
+ * Auth: NextAuth session required. Anonymous callers get 401.
+ * Pre-2026-05 this used a shared `accessKey` passed in the request body — removed:
+ * the key was visible in browser devtools to every host, and a single leak burned
+ * an unbounded amount of OpenAI quota with no per-user accountability.
+ */
+
 import { NextRequest, NextResponse } from 'next/server';
 import OpenAI from 'openai';
 import { z } from 'zod';
+import { auth } from '@/auth';
 
-// Define a simple schema that matches the TSV format
 const QuizResponseSchema = z.object({
   questions: z.array(
     z.object({
@@ -11,14 +20,19 @@ const QuizResponseSchema = z.object({
       wrong1: z.string(),
       wrong2: z.string(),
       wrong3: z.string(),
-      explanation: z.string()
+      explanation: z.string(),
     })
-  )
+  ),
 });
 
 export async function POST(request: NextRequest) {
+  const session = await auth();
+  if (!session?.user) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
   try {
-    const { subject, language, accessKey, questionCount = 5 } = await request.json();
+    const { subject, language, questionCount = 5 } = await request.json();
 
     if (!subject || !language) {
       return NextResponse.json(
@@ -27,7 +41,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Validate question count
     if (questionCount < 1 || questionCount > 20) {
       return NextResponse.json(
         { error: 'Question count must be between 1 and 20' },
@@ -35,33 +48,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Check if access key is provided
-    if (!accessKey) {
-      return NextResponse.json(
-        { error: 'Access key is required' },
-        { status: 401 }
-      );
-    }
-
-    // Validate access key against allowed keys list
-    const allowedKeys = process.env.AI_GENERATION_KEYS;
-    if (!allowedKeys) {
-      return NextResponse.json(
-        { error: 'AI generation keys not configured' },
-        { status: 500 }
-      );
-    }
-
-    // Parse the comma-separated list of access keys
-    const keyList = allowedKeys.split(',').map(k => k.trim());
-    if (!keyList.includes(accessKey)) {
-      return NextResponse.json(
-        { error: 'Invalid access key' },
-        { status: 403 }
-      );
-    }
-
-    // Check for API key
     const apiKey = process.env.OPENAI_API_KEY;
     if (!apiKey) {
       return NextResponse.json(
@@ -70,10 +56,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Initialize OpenAI client
     const openai = new OpenAI({ apiKey });
 
-    // Generate the prompt based on language
     const prompts = {
       english: `Create ${questionCount} multiple-choice quiz questions about "${subject}".
 
@@ -92,12 +76,11 @@ Pour chaque question, fournissez :
 - La réponse correcte
 - Une explication optionnelle
 
-Rendez les questions engageantes, éducatives et appropriées pour un jeu de quiz.`
+Rendez les questions engageantes, éducatives et appropriées pour un jeu de quiz.`,
     };
 
     const prompt = prompts[language as keyof typeof prompts] || prompts.english;
 
-    // Add JSON schema instructions to the prompt
     const jsonInstructions = `
 
 You must respond with a valid JSON object in the following format:
@@ -114,20 +97,20 @@ You must respond with a valid JSON object in the following format:
   ]
 }`;
 
-    // Call OpenAI API with JSON mode
     const completion = await openai.chat.completions.create({
       model: 'gpt-4o-mini',
       messages: [
         {
           role: 'system',
-          content: language === 'french' 
-            ? 'Vous êtes un expert en création de quiz éducatifs. Créez des questions claires, précises et engageantes en français. Répondez toujours avec un JSON valide.'
-            : 'You are an expert at creating educational quizzes. Create clear, accurate, and engaging questions. Always respond with valid JSON.'
+          content:
+            language === 'french'
+              ? 'Vous êtes un expert en création de quiz éducatifs. Créez des questions claires, précises et engageantes en français. Répondez toujours avec un JSON valide.'
+              : 'You are an expert at creating educational quizzes. Create clear, accurate, and engaging questions. Always respond with valid JSON.',
         },
         {
           role: 'user',
-          content: prompt + jsonInstructions
-        }
+          content: prompt + jsonInstructions,
+        },
       ],
       response_format: { type: 'json_object' },
       temperature: 0.8,
@@ -138,24 +121,21 @@ You must respond with a valid JSON object in the following format:
       throw new Error('No response from OpenAI');
     }
 
-    // Parse and validate the response with Zod
     const jsonResponse = JSON.parse(content);
     const parsed = QuizResponseSchema.parse(jsonResponse);
 
     return NextResponse.json({
       success: true,
-      questions: parsed.questions
+      questions: parsed.questions,
     });
-
   } catch (error) {
     console.error('Error generating questions:', error);
     return NextResponse.json(
-      { 
-        error: 'Failed to generate questions', 
-        details: error instanceof Error ? error.message : 'Unknown error' 
+      {
+        error: 'Failed to generate questions',
+        details: error instanceof Error ? error.message : 'Unknown error',
       },
       { status: 500 }
     );
   }
 }
-
