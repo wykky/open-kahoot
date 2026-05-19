@@ -4,11 +4,11 @@
 // Accent color (purple) - centralized for easy theme changes
 // Change these values to change the accent color throughout the app
 const accentColor = {
-  bg: 'bg-yellow-600',
-  bgHover: 'hover:bg-yellow-700',
-  bgLight: 'bg-yellow-500',
-  text: 'text-yellow-600',
-  textHover: 'hover:text-yellow-700',
+  bg: 'bg-yellow-400',
+  bgHover: 'hover:bg-yellow-500',
+  bgLight: 'bg-yellow-300',
+  text: 'text-yellow-500',
+  textHover: 'hover:text-yellow-600',
   border: 'border-yellow-500',
   borderHover: 'border-yellow-600',
   ring: 'ring-yellow-500/50',

@@ -2,7 +2,6 @@ import { Trophy, LucideIcon } from 'lucide-react';
 import type { Player } from '@/types/game';
 import Button from './Button';
 import AnimatedIcon from './AnimatedIcon';
-import { palette } from '@/lib/palette';
 
 interface LeaderboardProps {
   players: Player[];
@@ -65,10 +64,10 @@ export default function Leaderboard({
         {players.map((player, index) => (
           <div
             key={player.id}
-            className="flex items-center justify-between p-4 rounded-lg border border-gray-300 bg-white"
+            className="flex items-center justify-between p-4 rounded-xl border-2 border-black bg-white"
           >
             <div className="flex items-center gap-4">
-              <div className={`w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-lg ${palette.accent.bg}`}>
+              <div className="w-10 h-10 rounded-full flex items-center justify-center bg-black text-yellow-400 font-bold text-lg">
                 {index + 1}
               </div>
               <div className="text-black font-semibold text-lg">{player.name}</div>

@@ -47,20 +47,20 @@ export default function PlayerList({
           {players.map((player) => (
             <div
               key={player.id}
-              className="bg-white rounded-lg p-4 text-center relative border border-gray-300"
+              className="bg-white rounded-xl p-4 text-center relative border-2 border-black"
             >
               <div className="text-black text-4xl font-subtitle">{player.name}</div>
               {/* {player.score !== undefined && (
                 <div className="text-gray-600 text-sm mt-1">{player.score} points</div>
               )} */}
-              
+
               {showDyslexiaControls && (
                 <div className="mt-2 flex items-center justify-center">
                   <button
                     onClick={() => handleToggleDyslexiaSupport(player.id)}
                     className={`inline-flex items-center px-2 py-1 rounded-md text-xs font-medium transition-colors ${
-                      player.hasDyslexiaSupport 
-                        ? `${accent.bg} text-white` 
+                      player.hasDyslexiaSupport
+                        ? `${accent.bg} text-black`
                         : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                     }`}
                     title={player.hasDyslexiaSupport ? 'Dyslexia support enabled' : 'Enable dyslexia support'}

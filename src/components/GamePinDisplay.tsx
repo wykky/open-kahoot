@@ -60,21 +60,21 @@ export default function GamePinDisplay({
   return (
     <div className="flex gap-6 mb-6 justify-center">
       {/* Website URL Box */}
-      <div className="bg-white rounded-lg p-6 flex flex-col items-center justify-center min-h-[100px] border border-gray-300">
+      <div className="bg-white rounded-2xl p-6 flex flex-col items-center justify-center min-h-[100px] border-4 border-black shadow-xl">
         <div className="text-gray-600 text-sm text-center">{t('host.lobby.websiteUrl')}</div>
         <div className="text-3xl font-bold text-black text-center break-all">{websiteUrl}</div>
       </div>
-      
+
       {/* PIN Box */}
-      <div className="bg-white rounded-lg p-6 flex flex-col items-center justify-center min-h-[100px] border border-gray-300">
+      <div className="bg-white rounded-2xl p-6 flex flex-col items-center justify-center min-h-[100px] border-4 border-black shadow-xl">
         <div className="text-gray-600 text-sm">{t('host.lobby.gamePin')}</div>
         <div className="text-5xl font-bold text-black">{pin}</div>
       </div>
-      
+
       {/* QR Code Box */}
       {joinUrl && (
-        <div 
-          className="bg-white rounded-lg p-4 flex flex-col items-center justify-center min-h-[100px] cursor-pointer hover:bg-gray-50 transition-colors border border-gray-300"
+        <div
+          className="bg-white rounded-2xl p-4 flex flex-col items-center justify-center min-h-[100px] cursor-pointer hover:bg-yellow-50 transition-colors border-4 border-black shadow-xl"
           onClick={() => setShowQRModal(true)}
           title="Click to enlarge QR code"
         >
@@ -93,8 +93,8 @@ export default function GamePinDisplay({
           onClick={() => setShowQRModal(false)}
           style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0 }}
         >
-          <div 
-            className="bg-white rounded-lg p-8 border border-gray-300"
+          <div
+            className="bg-white rounded-2xl p-8 border-4 border-black shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           >
             <QRCode

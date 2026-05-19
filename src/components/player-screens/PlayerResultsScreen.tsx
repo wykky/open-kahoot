@@ -20,7 +20,7 @@ export default function PlayerResultsScreen({
   const showAnswers = !!currentQuestion;
 
   return (
-    <div className="bg-white rounded-lg p-6 sm:p-8 border border-gray-300 text-center w-full flex flex-col min-h-[calc(100vh-4rem)]">
+    <div className="bg-white rounded-2xl p-6 sm:p-8 border-4 border-black shadow-xl text-center w-full flex flex-col min-h-[calc(100vh-4rem)]">
       {/* Result Header */}
       <div className="mb-6">
         <h1 className="text-4xl sm:text-5xl text-black mb-4 font-subtitle">

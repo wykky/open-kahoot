@@ -38,9 +38,9 @@ export default function Button({
   // Base styles
   const baseStyles = `font-semibold ${variant === 'pill' ? 'rounded-full' : 'rounded-lg'} transition-colors focus:outline-none focus:ring-2 ${accent.ringFocus} inline-flex items-center justify-center gap-2 cursor-pointer`;
   
-  // Variant styles - flat design
+  // Variant styles - Atenu brand: yellow-400 + black borders, swap-on-hover for primary
   const variantStyles = {
-    primary: `${accent.bg} ${accent.bgHover} text-white`,
+    primary: 'bg-yellow-400 text-black border-2 border-black hover:bg-black hover:text-yellow-400',
     secondary: 'bg-white hover:bg-gray-100 text-black border border-gray-300',
     success: 'bg-green-600 hover:bg-green-700 text-white',
     danger: 'bg-red-600 hover:bg-red-700 text-white',
@@ -102,7 +102,7 @@ export default function Button({
     >
       {loading ? (
         <>
-          <div className={`animate-spin rounded-full h-5 w-5 border-b-2 ${variant === 'primary' || variant === 'success' || variant === 'danger' || variant === 'black' ? 'border-white' : 'border-black'}`}></div>
+          <div className={`animate-spin rounded-full h-5 w-5 border-b-2 ${variant === 'success' || variant === 'danger' || variant === 'black' ? 'border-white' : 'border-black'}`}></div>
           {children}
         </>
       ) : (

@@ -32,10 +32,12 @@ export default function PageLayout({
     '6xl': 'max-w-6xl'
   };
 
+  // `isPurpleBackground` is a legacy name — these gradients render as brand yellow,
+  // so black text reads correctly. The variable is kept to minimise diff downstream.
   const isPurpleBackground = gradient === 'leaderboard' || gradient === 'finished';
-  const textColor = isPurpleBackground ? 'text-white' : 'text-black';
-  const footerTextColor = isPurpleBackground ? 'text-white/70' : 'text-gray-700';
-  const footerLinkHover = isPurpleBackground ? 'hover:text-white' : 'hover:text-black';
+  const textColor = 'text-black';
+  const footerTextColor = isPurpleBackground ? 'text-black/70' : 'text-gray-700';
+  const footerLinkHover = 'hover:text-black';
 
   const currentYear = new Date().getFullYear();
 

@@ -42,9 +42,9 @@ export default function Modal({ isOpen, onClose, title, children }: ModalProps) 
       />
       
       {/* Modal */}
-      <div className="relative bg-white rounded-lg shadow-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto border border-gray-300">
+      <div className="relative bg-white rounded-2xl shadow-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto border-4 border-black">
         {/* Header */}
-        <div className="sticky top-0 bg-white px-6 py-4 flex items-center justify-between border-b border-gray-300">
+        <div className="sticky top-0 bg-white px-6 py-4 flex items-center justify-between border-b-2 border-black">
           <h2 className="text-2xl text-black font-subtitle">{title}</h2>
           <button
             onClick={onClose}
