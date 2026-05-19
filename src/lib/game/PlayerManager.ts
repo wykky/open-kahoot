@@ -10,6 +10,14 @@ const TRUST_WINDOW_MS = 2000;
 const MAX_POINTS_PER_QUESTION = 1000;
 // Dyslexia accessibility: reduce the time penalty fraction by 20% before applying the /2 floor.
 const DYSLEXIA_TIME_PENALTY_MULTIPLIER = 0.8;
+// Streak/combo bonus: matches Kahoot's pattern. Streak 1 = no bonus (first correct, no chain yet),
+// streak 2 = +100, ..., streak 6+ = +500 capped. Reset to 0 on any wrong / no answer.
+const STREAK_BONUS_PER_STEP = 100;
+const STREAK_BONUS_MAX = 500;
+
+function streakBonusFor(streak: number): number {
+  return Math.min(STREAK_BONUS_MAX, Math.max(0, (streak - 1) * STREAK_BONUS_PER_STEP));
+}
 
 /**
  * Canonical scoring math — single source of truth for "how many points did this player
@@ -214,10 +222,17 @@ export class PlayerManager {
 
     game.players.forEach((player) => {
       if (player.isHost) return;
-      const pointsEarned = computeQuestionPoints(player, game, question);
-      player.lastPointsEarned = pointsEarned;
-      if (pointsEarned > 0) {
-        player.score += pointsEarned;
+      const basePoints = computeQuestionPoints(player, game, question);
+      const wasCorrect = basePoints > 0;
+
+      if (wasCorrect) {
+        const newStreak = (player.currentStreak ?? 0) + 1;
+        const bonus = streakBonusFor(newStreak);
+        const totalEarned = basePoints + bonus;
+        player.currentStreak = newStreak;
+        player.streakBonus = bonus;
+        player.lastPointsEarned = totalEarned;
+        player.score += totalEarned;
         const supportStatus = player.hasDyslexiaSupport ? ' (with dyslexia support)' : '';
         const serverResponseMs = (player.answerTime || Date.now()) - (game.questionStartTime || Date.now());
         const usedClient =
@@ -225,8 +240,15 @@ export class PlayerManager {
           player.perceivedResponseMs >= 0 &&
           Math.abs(serverResponseMs - player.perceivedResponseMs) <= TRUST_WINDOW_MS &&
           player.perceivedResponseMs !== serverResponseMs;
-        console.log(`[PIN ${game.pin}] ${player.name} +${pointsEarned}${supportStatus}${usedClient ? ' [client-time]' : ''} | Total: ${player.score}`);
+        const streakTag = bonus > 0 ? ` [streak ${newStreak} +${bonus}]` : '';
+        console.log(`[PIN ${game.pin}] ${player.name} +${totalEarned}${supportStatus}${usedClient ? ' [client-time]' : ''}${streakTag} | Total: ${player.score}`);
         try { updatePlayerScore(game.id, player.id, player.score); } catch (e) { console.error('[db] updatePlayerScore failed:', e); }
+      } else {
+        // Wrong / no answer breaks the streak. Cache 0 so getPersonalResult shows
+        // the +0 outcome consistently with TSV row.
+        player.currentStreak = 0;
+        player.streakBonus = 0;
+        player.lastPointsEarned = 0;
       }
     });
   }

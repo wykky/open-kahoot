@@ -187,6 +187,7 @@
       "currentPosition": "Current position",
       "pointsBehind": "points behind",
       "inTheLead": "You're in the lead! Keep it up!",
+      "streakLabel": "streak",
       "waitingForHost": "Waiting for host to continue...",
       "playersGotItRight": "{{correct}} out of {{total}} players got it right!",
       "showLeaderboard": "Show Leaderboard"

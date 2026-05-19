@@ -97,7 +97,9 @@ export class QuestionManager {
       position,
       pointsBehind,
       nextPlayerName,
-      explanation: question.explanation
+      explanation: question.explanation,
+      currentStreak: player.currentStreak ?? 0,
+      streakBonus: player.streakBonus ?? 0,
     };
   }
 

@@ -187,6 +187,7 @@
       "currentPosition": "የአሁን ደረጃ",
       "pointsBehind": "ነጥብ በኋላ",
       "inTheLead": "በመሪነት ላይ ነዎት! ይቀጥሉ!",
+      "streakLabel": "ተከታታይ",
       "waitingForHost": "አስተናጋጁ እስኪቀጥል በመጠባበቅ ላይ...",
       "playersGotItRight": "ከ {{total}} ተጫዋቾች ውስጥ {{correct}} በትክክል መልሰዋል!",
       "showLeaderboard": "የደረጃ ሰንጠረዥ አሳይ"

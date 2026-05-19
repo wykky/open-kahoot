@@ -69,13 +69,18 @@ export interface Player {
   perceivedResponseMs?: number; // Phase 8: client-reported time-to-click, used for adaptive scoring
   isConnected: boolean; // Track connection status
   hasDyslexiaSupport?: boolean; // New field for dyslexia support
-  // Cached per-question points. Set once by PlayerManager.updateScores; read by
-  // storeAnswersToHistory (TSV row) and getPersonalResult (player's "+X" toast).
+  // Cached per-question points (includes streak bonus). Set once by PlayerManager.updateScores;
+  // read by storeAnswersToHistory (TSV row) and getPersonalResult (player's "+X" toast).
   // Cleared in clearAnswers between questions.
   lastPointsEarned?: number;
   // Phase 8+ tie-aware competition rank (1,1,3,4,5,5,7). Set server-side before
   // leaderboardShown / gameFinished emits. Clients should prefer this over array index.
   rank?: number;
+  // Consecutive correct answers. Increments on correct, resets to 0 on wrong / no answer.
+  // Persists across host restartQuestion since clearAnswers doesn't reset it.
+  currentStreak?: number;
+  // Bonus points earned from the streak on the last scored question (0 on streak 0 or 1).
+  streakBonus?: number;
 }
 
 export interface GameStats {
@@ -97,6 +102,9 @@ export interface PersonalResult {
   pointsBehind: number;
   nextPlayerName: string | null;
   explanation?: string;
+  // Kahoot-style consecutive-correct streak + bonus points from this question
+  currentStreak?: number;
+  streakBonus?: number;
 }
 
 /**
