@@ -21,7 +21,7 @@ Standing brief for any Claude Code (or Cowork / general agent) session that pick
 - **Next.js 15.5.12** (App Router, `src/` directory)
 - **React 19**, **TypeScript**
 - **Socket.io v4** (Next.js custom server in `server.ts`)
-- **NextAuth.js v5 / Auth.js** (Google OAuth + custom Telegram Login Widget; host-only — players play anonymously)
+- **NextAuth.js v5 / Auth.js** (Google OAuth only; host-only — players play anonymously. Telegram sign-in was removed; existing `tg:`-prefixed user rows stay readable for past game history but no new Telegram sign-ins are accepted.)
 - **better-sqlite3** for persistence (`/app/data/atenu.db`)
 - **Tailwind v4** (Atenu brand: yellow `#FFC600` + black)
 - **i18next** with English / Amharic / Oromo (Ge'ez glyphs via Noto Sans Ethiopic)

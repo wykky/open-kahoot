@@ -1,40 +1,5 @@
 import NextAuth from "next-auth";
 import Google from "next-auth/providers/google";
-import Credentials from "next-auth/providers/credentials";
-import { createHash, createHmac } from "crypto";
-
-// Verify Telegram Login Widget payload per Telegram's spec.
-// https://core.telegram.org/widgets/login#checking-authorization
-const TELEGRAM_FIELDS = new Set([
-  "id",
-  "first_name",
-  "last_name",
-  "username",
-  "photo_url",
-  "auth_date",
-]);
-
-function verifyTelegramAuth(
-  data: Record<string, string>,
-  botToken: string
-): boolean {
-  const { hash } = data;
-  if (!hash || !botToken) return false;
-  // Only include Telegram's signed fields — exclude csrfToken, callbackUrl, etc.
-  const rest: Record<string, string> = {};
-  for (const k of Object.keys(data)) {
-    if (TELEGRAM_FIELDS.has(k)) rest[k] = data[k];
-  }
-  const dataCheckString = Object.keys(rest)
-    .sort()
-    .map((k) => `${k}=${rest[k]}`)
-    .join("\n");
-  const secret = createHash("sha256").update(botToken).digest();
-  const hmac = createHmac("sha256", secret)
-    .update(dataCheckString)
-    .digest("hex");
-  return hmac === hash;
-}
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
   trustHost: true, // required behind Cloudflare Tunnel
@@ -46,48 +11,6 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       clientId: process.env.GOOGLE_CLIENT_ID,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET,
     }),
-    Credentials({
-      id: "telegram",
-      name: "Telegram",
-      credentials: {
-        id: {},
-        first_name: {},
-        last_name: {},
-        username: {},
-        photo_url: {},
-        auth_date: {},
-        hash: {},
-      },
-      async authorize(credentials) {
-        if (!credentials) return null;
-        const data: Record<string, string> = {};
-        for (const [k, v] of Object.entries(credentials)) {
-          if (v !== undefined && v !== null && v !== "") {
-            data[k] = String(v);
-          }
-        }
-        const botToken = process.env.TELEGRAM_BOT_TOKEN;
-        if (!botToken) return null;
-        if (!verifyTelegramAuth(data, botToken)) return null;
-        // Telegram's spec permits up to 1 day, but a leaked payload (logs, referer,
-        // browser history) stays replayable until then. 300s is plenty for slow 3G logins.
-        const MAX_AUTH_AGE_SECONDS = 300;
-        const authDate = parseInt(data.auth_date, 10);
-        if (!authDate || Math.abs(Date.now() / 1000 - authDate) > MAX_AUTH_AGE_SECONDS) {
-          return null;
-        }
-        const displayName =
-          [data.first_name, data.last_name].filter(Boolean).join(" ") ||
-          data.username ||
-          `tg:${data.id}`;
-        return {
-          id: `tg:${data.id}`,
-          name: displayName,
-          email: data.username ? `${data.username}@telegram.local` : null,
-          image: data.photo_url || null,
-        };
-      },
-    }),
   ],
   session: { strategy: "jwt" },
   callbacks: {
@@ -97,21 +20,23 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         const t = token as unknown as Record<string, unknown>;
         if (u.id) {
           t.id = u.id;
-          t.provider = u.id.startsWith("tg:") ? "telegram" : "google";
+          t.provider = "google";
         }
-        // Phase 4B: upsert user into SQLite. Use dynamic import so client bundles don't pull in better-sqlite3.
+        // Phase 4B: upsert user into SQLite. Use dynamic import so client bundles
+        // don't pull in better-sqlite3.
         try {
-          const provider = u.id?.startsWith("tg:") ? "telegram" : "google";
-          const providerUserId = u.id?.startsWith("tg:")
-            ? u.id.slice(3)
-            : (account?.providerAccountId || u.email || u.id || "");
+          const providerUserId = account?.providerAccountId || u.email || u.id || "";
           if (providerUserId) {
             const { upsertUser } = await import("@/lib/db");
             const dbUser = upsertUser({
-              provider,
+              provider: "google",
               providerUserId,
               email: u.email ?? null,
-              name: u.name ?? (profile && typeof profile === "object" && "name" in profile ? (profile as { name?: string }).name ?? null : null),
+              name:
+                u.name ??
+                (profile && typeof profile === "object" && "name" in profile
+                  ? (profile as { name?: string }).name ?? null
+                  : null),
               avatarUrl: u.image ?? null,
             });
             t.dbUserId = dbUser.id;

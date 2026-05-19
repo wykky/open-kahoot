@@ -1,13 +1,12 @@
 import type { NextConfig } from "next";
 
-// CSP pins script origins to self + Telegram (login widget). frame-ancestors 'none' blocks
-// clickjacking. 'unsafe-inline' is still required for Next 15 bootstrap scripts; nonce
-// migration is a separate task. img-src is permissive because user-imported quiz images
-// can come from anywhere.
+// CSP pins script origins to self only — no third-party widgets are loaded.
+// frame-ancestors 'none' blocks clickjacking. 'unsafe-inline' is still required
+// for Next 15 bootstrap scripts; nonce migration is a separate task. img-src is
+// permissive because user-imported quiz images can come from anywhere.
 const cspHeader = [
   "default-src 'self'",
-  "script-src 'self' 'unsafe-inline' https://telegram.org https://oauth.telegram.org",
-  "frame-src https://oauth.telegram.org",
+  "script-src 'self' 'unsafe-inline'",
   "img-src 'self' data: https:",
   "connect-src 'self' wss: https:",
   "style-src 'self' 'unsafe-inline'",

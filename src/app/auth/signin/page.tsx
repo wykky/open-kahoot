@@ -3,8 +3,8 @@
 import { signIn } from 'next-auth/react';
 import { Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
+import Link from 'next/link';
 import PageLayout from '@/components/PageLayout';
-import TelegramLoginButton from '@/components/TelegramLoginButton';
 
 function SignInInner() {
   const searchParams = useSearchParams();
@@ -12,17 +12,17 @@ function SignInInner() {
 
   return (
     <PageLayout gradient="home" maxWidth="md" showLogo={true} centerVertically>
-      <div className="bg-white border-4 border-black rounded-2xl p-6 sm:p-8 shadow-xl text-center">
-        <h1 className="text-2xl sm:text-3xl font-title text-black mb-2">
+      <div className="bg-white border-4 border-black rounded-2xl p-5 sm:p-7 shadow-xl text-center">
+        <h1 className="text-2xl sm:text-3xl font-title text-black mb-1">
           Host sign in
         </h1>
-        <p className="text-sm text-gray-700 mb-6">
+        <p className="text-sm text-gray-700 mb-4">
           Sign in to host games. Players don&apos;t need an account.
         </p>
 
         <button
           onClick={() => signIn('google', { callbackUrl })}
-          className="w-full mb-4 flex items-center justify-center gap-3 px-4 py-3 rounded-lg bg-white border-2 border-black text-black font-bold hover:bg-yellow-400 transition-colors shadow"
+          className="w-full flex items-center justify-center gap-3 px-4 py-3 rounded-lg bg-white border-2 border-black text-black font-bold hover:bg-yellow-400 transition-colors shadow"
         >
           <svg className="w-5 h-5" viewBox="0 0 48 48" aria-hidden="true">
             <path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3c-1.6 4.7-6.1 8-11.3 8-6.6 0-12-5.4-12-12s5.4-12 12-12c3 0 5.8 1.1 7.9 3l5.7-5.7C34.9 6.5 29.7 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.4-.4-3.5z"/>
@@ -33,21 +33,11 @@ function SignInInner() {
           Sign in with Google
         </button>
 
-        <div className="flex items-center gap-3 my-4">
-          <div className="flex-1 h-px bg-gray-300" />
-          <span className="text-xs text-gray-500 uppercase">or</span>
-          <div className="flex-1 h-px bg-gray-300" />
-        </div>
-
-        <div className="flex justify-center">
-          <TelegramLoginButton callbackUrl={callbackUrl} />
-        </div>
-
-        <p className="text-sm text-gray-500 mt-6">
+        <p className="text-xs text-gray-500 mt-4">
           By signing in you agree to our{' '}
-          <a href="https://atenu.org/terms-and-conditions/" className="underline">Terms</a>
+          <Link href="/terms" className="underline">Terms</Link>
           {' '}and{' '}
-          <a href="https://atenu.org/privacy-policy/" className="underline">Privacy Policy</a>
+          <Link href="/privacy" className="underline">Privacy Policy</Link>
           .
         </p>
       </div>
