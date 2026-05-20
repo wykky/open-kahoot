@@ -255,13 +255,18 @@ export default function HostPage() {
     const updated = [...questions];
     const next = { ...updated[index], [field]: value } as Question;
     // Side effect: switching questionType seeds/clears correctAnswers.
-    // Single → multi: seed correctAnswers from the existing primary correctAnswer
-    //                 (with one extra placeholder so the host immediately sees "need 2 correct")
+    // Single → multi: seed with TWO correct indices — the existing primary plus the
+    //                 next slot. The server validator rejects multi-select with fewer
+    //                 than 2 corrects (the whole point), so seeding with 1 means
+    //                 "Create game" silently fails. Start the host at a valid state;
+    //                 they can uncheck and check whichever pair they actually want.
     // Multi → single: clear correctAnswers so single-mode reads stay clean.
     if (field === 'questionType') {
       if (value === 'multi') {
         if (!next.correctAnswers || next.correctAnswers.length < 2) {
-          next.correctAnswers = next.correctAnswers ?? [next.correctAnswer];
+          const primary = next.correctAnswer;
+          const buddy = (primary + 1) % 4;
+          next.correctAnswers = [primary, buddy].sort((a, b) => a - b);
         }
       } else {
         delete next.correctAnswers;

@@ -78,10 +78,14 @@ export default function QuestionEditor({
   const toggleMultiCorrect = (idx: number) => {
     const nextSet = new Set(correctSet);
     if (nextSet.has(idx)) {
-      // Don't drop below 1 — host needs at least one correct to start saving the question.
-      if (nextSet.size <= 1) return;
+      // Server validator requires 2-3 corrects for multi. Blocking drop below 2
+      // keeps the question valid at every keystroke — host never lands in a state
+      // where Create Game would silently reject.
+      if (nextSet.size <= 2) return;
       nextSet.delete(idx);
     } else {
+      // Cap at 3 — beyond that there's nothing left to be wrong.
+      if (nextSet.size >= 3) return;
       nextSet.add(idx);
     }
     onUpdateQuestion(

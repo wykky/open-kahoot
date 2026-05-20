@@ -100,11 +100,30 @@ export class PlayerManager {
   /**
    * Returns a question with options reordered for this player. Caller must use this
    * when settings.shuffleAnswers is true; otherwise just pass the canonical question.
+   *
+   * The permutation `perm[i] = j` means "shuffled slot i holds canonical option j".
+   * To keep correctAnswer / correctAnswers consistent with the shuffled options array
+   * (so the results screen can highlight the right cells), we translate every
+   * canonical correct index `j` to the shuffled slot `perm.indexOf(j)`. Without this
+   * step, the client receives options in shuffled order but correctAnswer in canonical
+   * order, and the results UI highlights whatever option happens to sit at the
+   * canonical correct index — the visible-but-wrong "Cairo is correct? No, Alexandria!"
+   * bug.
    */
   getShuffledQuestionForPlayer(game: Game, player: Player, question: Question): Question {
     if (!game.settings.shuffleAnswers) return question;
     const perm = this.getOrCreatePermutation(game.id, player.id, game.currentQuestionIndex, question.options.length);
-    return { ...question, options: perm.map((i) => question.options[i]!) };
+    const shuffledOptions = perm.map((i) => question.options[i]!);
+    const shuffledCorrectAnswer = perm.indexOf(question.correctAnswer);
+    const shuffledCorrectAnswers = question.correctAnswers
+      ? question.correctAnswers.map((j) => perm.indexOf(j)).sort((a, b) => a - b)
+      : undefined;
+    return {
+      ...question,
+      options: shuffledOptions,
+      correctAnswer: shuffledCorrectAnswer >= 0 ? shuffledCorrectAnswer : question.correctAnswer,
+      correctAnswers: shuffledCorrectAnswers,
+    };
   }
 
   /**
