@@ -77,6 +77,12 @@ export default function PageLayout({
           </li>
           <li aria-hidden="true">·</li>
           <li>
+            <Link href="/library" className={`underline-offset-2 hover:underline ${footerLinkHover}`}>
+              Library
+            </Link>
+          </li>
+          <li aria-hidden="true">·</li>
+          <li>
             <Link href="/leaderboard" className={`underline-offset-2 hover:underline ${footerLinkHover}`}>
               Leaderboard
             </Link>

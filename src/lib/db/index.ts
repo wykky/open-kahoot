@@ -113,6 +113,43 @@ function migrate(d: Database.Database): void {
     );
     CREATE INDEX IF NOT EXISTS idx_answers_player ON answers(player_id);
     CREATE INDEX IF NOT EXISTS idx_answers_game ON answers(game_id);
+
+    /* Curated quiz library — Atenu-uploaded ESSLCE-aligned content.
+       Hosts browse + clone, but only admin imports new entries. */
+    CREATE TABLE IF NOT EXISTS quiz_library (
+      id                       TEXT PRIMARY KEY,
+      slug                     TEXT NOT NULL UNIQUE,
+      title                    TEXT NOT NULL,
+      subject                  TEXT,             -- e.g. 'Math', 'Biology', 'Geography'
+      grade                    INTEGER,          -- 9..12 for ESSLCE; null = general
+      language                 TEXT,             -- 'en' / 'am' / 'om'; null = English default
+      description              TEXT,
+      question_count           INTEGER NOT NULL,
+      default_think_time       INTEGER NOT NULL DEFAULT 5,
+      default_answer_time      INTEGER NOT NULL DEFAULT 20,
+      default_shuffle_answers  INTEGER NOT NULL DEFAULT 0,
+      published                INTEGER NOT NULL DEFAULT 1,
+      created_at               INTEGER NOT NULL,
+      updated_at               INTEGER NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS idx_library_subject_grade ON quiz_library(subject, grade);
+    CREATE INDEX IF NOT EXISTS idx_library_published ON quiz_library(published, created_at);
+
+    CREATE TABLE IF NOT EXISTS quiz_library_questions (
+      library_id       TEXT NOT NULL,
+      question_index   INTEGER NOT NULL,
+      id               TEXT NOT NULL,
+      text             TEXT NOT NULL,
+      options_json     TEXT NOT NULL,
+      correct_answer   INTEGER NOT NULL,
+      correct_answers  TEXT,   -- JSON array for multi-select; null for single
+      question_type    TEXT NOT NULL DEFAULT 'single',
+      time_limit       INTEGER NOT NULL,
+      explanation      TEXT,
+      image_url        TEXT,
+      PRIMARY KEY (library_id, question_index),
+      FOREIGN KEY (library_id) REFERENCES quiz_library(id) ON DELETE CASCADE
+    );
   `);
 
   // Idempotent column additions for multi-select support.
@@ -537,6 +574,209 @@ export function getGameMetadata(gameId: string): GameMetadata | null {
     | { title: string; pin: string; player_count: number; finished_at: number; question_count: number }
     | undefined;
   return row ?? null;
+}
+
+// ============================================================================
+// QUIZ LIBRARY (curated)
+// ============================================================================
+
+export interface LibraryQuizSummary {
+  id: string;
+  slug: string;
+  title: string;
+  subject: string | null;
+  grade: number | null;
+  language: string | null;
+  description: string | null;
+  question_count: number;
+  default_think_time: number;
+  default_answer_time: number;
+  default_shuffle_answers: number; // 0/1
+  created_at: number;
+}
+
+export interface LibraryQuestionRow {
+  id: string;
+  question_index: number;
+  text: string;
+  options_json: string;
+  correct_answer: number;
+  correct_answers: string | null;
+  question_type: string;
+  time_limit: number;
+  explanation: string | null;
+  image_url: string | null;
+}
+
+/**
+ * Public list of curated quizzes. Filters optional. Sort by created_at DESC so
+ * newest content surfaces first. Caller paginates with limit/offset.
+ */
+export function listLibraryQuizzes(opts: {
+  limit?: number;
+  offset?: number;
+  subject?: string;
+  grade?: number;
+} = {}): LibraryQuizSummary[] {
+  const limit = opts.limit ?? 24;
+  const offset = opts.offset ?? 0;
+  const conditions: string[] = ['published = 1'];
+  const params: Array<string | number> = [];
+  if (opts.subject) {
+    conditions.push('subject = ?');
+    params.push(opts.subject);
+  }
+  if (opts.grade !== undefined) {
+    conditions.push('grade = ?');
+    params.push(opts.grade);
+  }
+  const where = conditions.join(' AND ');
+  return getDb()
+    .prepare(
+      `SELECT id, slug, title, subject, grade, language, description, question_count,
+              default_think_time, default_answer_time, default_shuffle_answers, created_at
+         FROM quiz_library
+         WHERE ${where}
+         ORDER BY created_at DESC
+         LIMIT ? OFFSET ?`
+    )
+    .all(...params, limit, offset) as LibraryQuizSummary[];
+}
+
+export function countLibraryQuizzes(opts: { subject?: string; grade?: number } = {}): number {
+  const conditions: string[] = ['published = 1'];
+  const params: Array<string | number> = [];
+  if (opts.subject) {
+    conditions.push('subject = ?');
+    params.push(opts.subject);
+  }
+  if (opts.grade !== undefined) {
+    conditions.push('grade = ?');
+    params.push(opts.grade);
+  }
+  const row = getDb()
+    .prepare(`SELECT COUNT(*) AS c FROM quiz_library WHERE ${conditions.join(' AND ')}`)
+    .get(...params) as { c: number };
+  return row.c;
+}
+
+export function getLibraryQuiz(id: string): LibraryQuizSummary | null {
+  const row = getDb()
+    .prepare(
+      `SELECT id, slug, title, subject, grade, language, description, question_count,
+              default_think_time, default_answer_time, default_shuffle_answers, created_at
+         FROM quiz_library
+         WHERE id = ? AND published = 1`
+    )
+    .get(id) as LibraryQuizSummary | undefined;
+  return row ?? null;
+}
+
+export function getLibraryQuizQuestions(libraryId: string): LibraryQuestionRow[] {
+  return getDb()
+    .prepare(
+      `SELECT id, question_index, text, options_json, correct_answer, correct_answers,
+              question_type, time_limit, explanation, image_url
+         FROM quiz_library_questions
+         WHERE library_id = ?
+         ORDER BY question_index ASC`
+    )
+    .all(libraryId) as LibraryQuestionRow[];
+}
+
+/**
+ * Insert (or replace by slug) a library quiz with its questions. Used by the
+ * admin import script — not exposed to end users. The transaction guarantees
+ * the quiz row + every question row land together or not at all.
+ */
+export function insertLibraryQuiz(input: {
+  slug: string;
+  title: string;
+  subject?: string | null;
+  grade?: number | null;
+  language?: string | null;
+  description?: string | null;
+  defaultThinkTime?: number;
+  defaultAnswerTime?: number;
+  defaultShuffleAnswers?: boolean;
+  questions: Array<{
+    id?: string;
+    text: string;
+    options: string[];
+    correctAnswer: number;
+    correctAnswers?: number[];
+    questionType?: 'single' | 'multi';
+    timeLimit?: number;
+    explanation?: string | null;
+    imageUrl?: string | null;
+  }>;
+}): { id: string; replaced: boolean } {
+  const d = getDb();
+  const now = Date.now();
+
+  const existing = d
+    .prepare('SELECT id FROM quiz_library WHERE slug = ?')
+    .get(input.slug) as { id: string } | undefined;
+  const id = existing?.id ?? crypto.randomUUID();
+  const thinkTime = input.defaultThinkTime ?? 5;
+  const answerTime = input.defaultAnswerTime ?? 20;
+  const shuffle = input.defaultShuffleAnswers ? 1 : 0;
+
+  const upsertQuiz = d.prepare(
+    `INSERT OR REPLACE INTO quiz_library (
+       id, slug, title, subject, grade, language, description, question_count,
+       default_think_time, default_answer_time, default_shuffle_answers, published,
+       created_at, updated_at
+     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?)`
+  );
+
+  const deleteQuestions = d.prepare(
+    'DELETE FROM quiz_library_questions WHERE library_id = ?'
+  );
+
+  const insertQuestion = d.prepare(
+    `INSERT INTO quiz_library_questions (
+       library_id, question_index, id, text, options_json, correct_answer,
+       correct_answers, question_type, time_limit, explanation, image_url
+     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+  );
+
+  const tx = d.transaction(() => {
+    upsertQuiz.run(
+      id,
+      input.slug,
+      input.title,
+      input.subject ?? null,
+      input.grade ?? null,
+      input.language ?? null,
+      input.description ?? null,
+      input.questions.length,
+      thinkTime,
+      answerTime,
+      shuffle,
+      existing ? (d.prepare('SELECT created_at FROM quiz_library WHERE id = ?').get(id) as { created_at: number }).created_at : now,
+      now
+    );
+    deleteQuestions.run(id);
+    input.questions.forEach((q, idx) => {
+      insertQuestion.run(
+        id,
+        idx,
+        q.id ?? crypto.randomUUID(),
+        q.text,
+        JSON.stringify(q.options),
+        q.correctAnswer,
+        q.questionType === 'multi' && q.correctAnswers ? JSON.stringify(q.correctAnswers) : null,
+        q.questionType ?? 'single',
+        q.timeLimit ?? answerTime,
+        q.explanation ?? null,
+        q.imageUrl ?? null
+      );
+    });
+  });
+  tx();
+
+  return { id, replaced: !!existing };
 }
 
 // ============================================================================

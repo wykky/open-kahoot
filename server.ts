@@ -4,7 +4,7 @@ import next from 'next';
 import { Server as SocketIOServer } from 'socket.io';
 import { GameServer } from './src/lib/game';
 import { SOCKET_PATH } from './src/lib/socket-config';
-import { initDb, closeDb, sweepInflightGamesOnBoot, deleteOldGames, getGameTsv } from './src/lib/db';
+import { initDb, closeDb, sweepInflightGamesOnBoot, deleteOldGames, getGameTsv, countLibraryQuizzes, insertLibraryQuiz } from './src/lib/db';
 import { logRateLimitSummary } from './src/lib/rate-limit';
 
 const dev = process.env.NODE_ENV !== 'production';
@@ -34,6 +34,60 @@ const handle = app.getRequestHandler();
 initDb();
 const swept = sweepInflightGamesOnBoot((gameId) => getGameTsv(gameId));
 if (swept > 0) console.log(`[db] Boot sweep: marked ${swept} in-flight game(s) as finished`);
+
+// Seed one sample quiz on the very first boot so /library isn't empty for the
+// first visitor. Idempotent: only seeds when the library has zero entries.
+// Real curated content gets imported via scripts/import-library-quiz.ts later.
+try {
+  if (countLibraryQuizzes() === 0) {
+    insertLibraryQuiz({
+      slug: 'sample-ethiopia-geography',
+      title: 'Ethiopia geography — sample',
+      subject: 'Geography',
+      grade: 9,
+      language: 'en',
+      description: 'A taste of the library. Five quick Ethiopia-themed questions.',
+      defaultThinkTime: 5,
+      defaultAnswerTime: 20,
+      defaultShuffleAnswers: true,
+      questions: [
+        {
+          text: 'What is the capital of Ethiopia?',
+          options: ['Mekele', 'Addis Ababa', 'Hawassa', 'Dire Dawa'],
+          correctAnswer: 1,
+          explanation: 'Addis Ababa has been the capital since Emperor Menelik II founded it in 1886.',
+        },
+        {
+          text: 'Which Ethiopian lake is the source of the Blue Nile?',
+          options: ['Lake Tana', 'Lake Abaya', 'Lake Turkana', 'Lake Chamo'],
+          correctAnswer: 0,
+          explanation: 'The Blue Nile flows out of Lake Tana in the northern highlands.',
+        },
+        {
+          text: 'What is the highest mountain in Ethiopia?',
+          options: ['Mount Batu', 'Mount Guna', 'Ras Dashen', 'Mount Choke'],
+          correctAnswer: 2,
+          explanation: 'Ras Dashen in the Simien range reaches 4,550 m.',
+        },
+        {
+          text: 'The Great Rift Valley runs through Ethiopia in which general direction?',
+          options: ['East to west', 'Northeast to southwest', 'North to south', 'Circular around the centre'],
+          correctAnswer: 1,
+          explanation: 'The Rift cuts diagonally from the Red Sea down toward the Kenyan border.',
+        },
+        {
+          text: 'Which region is home to the Danakil Depression, one of the hottest places on Earth?',
+          options: ['Oromia', 'Amhara', 'Afar', 'Tigray'],
+          correctAnswer: 2,
+          explanation: 'The Danakil sits in the Afar Region — temperatures regularly exceed 45°C.',
+        },
+      ],
+    });
+    console.log('[db] Seeded sample library quiz');
+  }
+} catch (e) {
+  console.error('[db] Library seed error (non-fatal):', e);
+}
 
 // Retention: delete games finished more than 366 days ago — runs every 24h
 const RETENTION_DAYS = 366;
