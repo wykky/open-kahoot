@@ -5,6 +5,18 @@ import { getChoiceColor } from '@/lib/palette';
 import type { PersonalResult, Question } from '@/types/game';
 import { getCorrectAnswerSet, normalizeSubmission } from '@/lib/game/questionType';
 
+/**
+ * Player's per-question results screen. Designed to fit a typical mobile
+ * viewport (~520-700px tall after browser chrome) without page-level scroll.
+ *
+ * Layout strategy:
+ * - Card is `h-full flex flex-col overflow-hidden` — pins to its container.
+ * - Header + bottom info row are `shrink-0` so they never get squeezed.
+ * - The middle "question + options + explanation" region is the only place
+ *   that can overflow; it uses `flex-1 min-h-0 overflow-y-auto` so it scrolls
+ *   internally instead of breaking the page on extreme small viewports.
+ * - Points + position collapse to a side-by-side grid on mobile to save height.
+ */
 interface PlayerResultsScreenProps {
   personalResult: PersonalResult;
   currentQuestion?: Question;
@@ -17,73 +29,61 @@ export default function PlayerResultsScreen({
   selectedAnswer
 }: PlayerResultsScreenProps) {
   const showAnswers = !!currentQuestion;
+  const correctSet = currentQuestion ? getCorrectAnswerSet(currentQuestion) : null;
+  const picked = new Set(normalizeSubmission(selectedAnswer ?? null));
 
   return (
-    <div className="bg-white rounded-2xl p-6 sm:p-8 border-4 border-black shadow-xl text-center w-full flex flex-col min-h-[calc(100vh-4rem)]">
-      {/* Result Header */}
-      <div className="mb-6">
-        <h1 className="text-4xl sm:text-5xl text-black mb-4 font-subtitle">
-          {personalResult.wasCorrect ? 'Correct!' : 'Incorrect!'}
-        </h1>
-      </div>
+    <div className="bg-white rounded-xl p-3 sm:p-5 border-4 border-black shadow-xl text-center w-full h-full flex flex-col overflow-hidden">
+      {/* Result header */}
+      <h1 className="shrink-0 text-2xl sm:text-3xl text-black mb-2 font-subtitle">
+        {personalResult.wasCorrect ? 'Correct!' : 'Incorrect!'}
+      </h1>
 
-      {/* Question + correct answer highlight */}
-      {showAnswers && currentQuestion && (
-        <div className="bg-gray-50 rounded-xl p-4 sm:p-5 mb-5 border border-gray-200 text-left">
-          <p className="text-base font-semibold text-black mb-2 leading-snug break-words">
+      {/* Question + options + explanation — only region that can overflow */}
+      {showAnswers && currentQuestion && correctSet && (
+        <div className="flex-1 min-h-0 overflow-y-auto bg-gray-50 rounded-lg p-2 sm:p-3 mb-2 border border-gray-200 text-left">
+          <p className="text-sm font-semibold text-black mb-1 leading-snug break-words">
             {currentQuestion.question}
           </p>
           {currentQuestion.questionType === 'multi' && (
-            <p className="text-xs font-semibold text-yellow-800 mb-2">Multi-select question</p>
+            <p className="text-[10px] font-semibold text-yellow-800 mb-1">Multi-select</p>
           )}
-          <div className="space-y-2 mt-3">
-            {(() => {
-              const correctSet = getCorrectAnswerSet(currentQuestion);
-              const picked = new Set(normalizeSubmission(selectedAnswer ?? null));
-              return currentQuestion.options.map((opt, idx) => {
+          <div className="space-y-1 mt-2">
+            {currentQuestion.options.map((opt, idx) => {
               const isCorrect = correctSet.has(idx);
               const isPlayerChoice = picked.has(idx);
               const baseColor = getChoiceColor(idx);
-
               let ring = '';
-              let bg = 'bg-gray-100 text-gray-700';
-              let icon = null;
-
+              let bg = 'bg-gray-100 text-gray-500';
+              let icon: React.ReactNode = null;
               if (isCorrect) {
                 bg = `${baseColor} text-white`;
-                ring = 'ring-4 ring-green-400';
-                icon = <Check className="w-5 h-5 flex-shrink-0" />;
+                ring = 'ring-2 ring-green-400';
+                icon = <Check className="w-4 h-4 shrink-0" />;
               } else if (isPlayerChoice) {
                 bg = `${baseColor} text-white opacity-70`;
-                ring = 'ring-4 ring-red-400';
-                icon = <X className="w-5 h-5 flex-shrink-0" />;
-              } else {
-                bg = 'bg-gray-100 text-gray-500';
+                ring = 'ring-2 ring-red-400';
+                icon = <X className="w-4 h-4 shrink-0" />;
               }
-
               return (
-                <div
-                  key={idx}
-                  className={`flex items-center gap-3 px-3 py-2 rounded-lg ${bg} ${ring}`}
-                >
-                  <span className="flex-shrink-0 w-7 h-7 rounded-full bg-white/30 flex items-center justify-center font-bold text-sm">
+                <div key={idx} className={`flex items-center gap-2 px-2 py-1 rounded ${bg} ${ring}`}>
+                  <span className="shrink-0 w-5 h-5 rounded-full bg-white/30 flex items-center justify-center font-bold text-[10px]">
                     {['A', 'B', 'C', 'D'][idx]}
                   </span>
-                  <span className="flex-1 text-left text-sm sm:text-base font-medium">
+                  <span className="flex-1 text-left text-xs sm:text-sm font-medium leading-snug break-words">
                     {opt}
                   </span>
                   {icon}
                 </div>
               );
-              });
-            })()}
+            })}
           </div>
           {personalResult.explanation && (
-            <div className="mt-4 pt-4 border-t border-gray-200">
-              <p className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-1">
+            <div className="mt-2 pt-2 border-t border-gray-200">
+              <p className="text-[9px] font-bold text-gray-500 uppercase tracking-wide mb-0.5">
                 Explanation
               </p>
-              <p className="text-sm text-gray-700 leading-relaxed">
+              <p className="text-xs text-gray-700 leading-snug">
                 {personalResult.explanation}
               </p>
             </div>
@@ -91,59 +91,39 @@ export default function PlayerResultsScreen({
         </div>
       )}
 
-      {/* Points Earned */}
-      <div className="bg-gray-50 rounded-xl p-4 sm:p-5 mb-4 border border-gray-200">
-        <p className="text-gray-600 text-sm mb-1">Points earned this question</p>
-        <p className="text-3xl sm:text-4xl font-bold text-black">
-          +{personalResult.pointsEarned}
-        </p>
-        {/* Bonus chips — only when earned this question. Streak chip needs streak ≥ 2 (single correct = streak=1, bonus=0). */}
-        <div className="flex flex-wrap justify-center gap-2 mt-2">
-          {(personalResult.streakBonus ?? 0) > 0 && (
-            <span className="text-sm inline-flex items-center gap-1 px-3 py-1 rounded-full bg-yellow-400 text-black border-2 border-black font-bold">
-              🔥 {personalResult.currentStreak} streak · +{personalResult.streakBonus}
-            </span>
-          )}
-          {(personalResult.firstCorrectBonus ?? 0) > 0 && (
-            <span className="text-sm inline-flex items-center gap-1 px-3 py-1 rounded-full bg-black text-yellow-400 border-2 border-black font-bold">
-              🥇 First! · +{personalResult.firstCorrectBonus}
-            </span>
-          )}
-        </div>
-        <p className="text-gray-600 text-sm mt-1">Total score: {personalResult.totalScore}</p>
-      </div>
-
-      {/* Position & Competition */}
-      <div className="bg-gray-50 rounded-xl p-4 sm:p-5 mb-4 border border-gray-200">
-        <p className="text-gray-600 text-sm mb-1">Current position</p>
-        <div className="flex items-center justify-center gap-4 mb-2">
-          <span className="text-3xl sm:text-4xl font-bold text-black">#{personalResult.position}</span>
-        </div>
-        {personalResult.pointsBehind > 0 ? (
-          <p className="text-gray-600 text-sm">
-            {personalResult.pointsBehind} points behind{' '}
-            <span className="font-bold text-black">{personalResult.nextPlayerName}</span>
-          </p>
-        ) : (
-          <p className="font-semibold text-sm">
-            You&apos;re in the lead! Keep it up!
-          </p>
-        )}
-      </div>
-
-      <div className="flex-1"></div>
-
-      {/* Waiting Message */}
-      <div className="text-center mt-4">
-        <p className="text-gray-600 text-sm">Waiting for host to continue...</p>
-        <div className="flex justify-center mt-3">
-          <div className="animate-pulse flex space-x-1">
-            <div className="w-2 h-2 bg-gray-400 rounded-full"></div>
-            <div className="w-2 h-2 bg-gray-400 rounded-full"></div>
-            <div className="w-2 h-2 bg-gray-400 rounded-full"></div>
+      {/* Bottom info row — points + position side by side */}
+      <div className="shrink-0 grid grid-cols-2 gap-2">
+        <div className="bg-gray-50 rounded-lg p-2 border border-gray-200">
+          <p className="text-[10px] text-gray-600">Points earned</p>
+          <p className="text-xl sm:text-2xl font-bold text-black leading-tight">+{personalResult.pointsEarned}</p>
+          <div className="flex flex-wrap justify-center gap-1 mt-1">
+            {(personalResult.streakBonus ?? 0) > 0 && (
+              <span className="text-[10px] inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-yellow-400 text-black border border-black font-bold">
+                🔥 {personalResult.currentStreak} · +{personalResult.streakBonus}
+              </span>
+            )}
+            {(personalResult.firstCorrectBonus ?? 0) > 0 && (
+              <span className="text-[10px] inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-black text-yellow-400 border border-black font-bold">
+                🥇 +{personalResult.firstCorrectBonus}
+              </span>
+            )}
           </div>
+          <p className="text-[10px] text-gray-600 mt-0.5">Total: {personalResult.totalScore}</p>
+        </div>
+        <div className="bg-gray-50 rounded-lg p-2 border border-gray-200">
+          <p className="text-[10px] text-gray-600">Current position</p>
+          <p className="text-xl sm:text-2xl font-bold text-black leading-tight">#{personalResult.position}</p>
+          {personalResult.pointsBehind > 0 ? (
+            <p className="text-[10px] text-gray-600 mt-0.5 leading-snug">
+              {personalResult.pointsBehind} behind <span className="font-bold text-black">{personalResult.nextPlayerName}</span>
+            </p>
+          ) : (
+            <p className="text-[10px] font-semibold mt-0.5 leading-snug">In the lead!</p>
+          )}
         </div>
       </div>
+
+      <p className="shrink-0 text-[10px] text-gray-500 mt-1">Waiting for host…</p>
     </div>
   );
 }
