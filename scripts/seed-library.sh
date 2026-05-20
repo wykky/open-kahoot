@@ -34,7 +34,8 @@ fi
 # When empty, run locally (assumes node + better-sqlite3 + ATENU_DB_PATH in scope).
 run_node() {
   if [[ -n "$CONTAINER" ]]; then
-    docker exec "$CONTAINER" node /tmp/import-library-quiz.cjs "$@"
+    # Run with cwd /app so Node can resolve better-sqlite3 from /app/node_modules.
+    docker exec -w /app "$CONTAINER" node /app/import-library-quiz.cjs "$@"
   else
     node "$SCRIPT_DIR/import-library-quiz.cjs" "$@"
   fi
@@ -42,12 +43,13 @@ run_node() {
 
 # Copy TSVs + import script into the container. Production Next.js Docker
 # images only ship .next/, public/, and node_modules/ — `scripts/` lives in
-# source but isn't in the runtime layer, so we drop it into /tmp at run time.
+# source but isn't in the runtime layer. We drop the .cjs into /app/ (not
+# /tmp/) so it sits next to node_modules and `require('better-sqlite3')` works.
 if [[ -n "$CONTAINER" ]]; then
   echo "→ Copying TSVs + import script into $CONTAINER ..."
-  docker exec "$CONTAINER" rm -rf /tmp/library-seed /tmp/import-library-quiz.cjs
+  docker exec "$CONTAINER" rm -rf /tmp/library-seed /app/import-library-quiz.cjs
   docker cp "$SEED_DIR" "$CONTAINER:/tmp/library-seed"
-  docker cp "$SCRIPT_DIR/import-library-quiz.cjs" "$CONTAINER:/tmp/import-library-quiz.cjs"
+  docker cp "$SCRIPT_DIR/import-library-quiz.cjs" "$CONTAINER:/app/import-library-quiz.cjs"
 fi
 
 tsv_path() {
