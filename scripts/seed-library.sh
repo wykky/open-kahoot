@@ -34,17 +34,20 @@ fi
 # When empty, run locally (assumes node + better-sqlite3 + ATENU_DB_PATH in scope).
 run_node() {
   if [[ -n "$CONTAINER" ]]; then
-    docker exec "$CONTAINER" node /app/scripts/import-library-quiz.cjs "$@"
+    docker exec "$CONTAINER" node /tmp/import-library-quiz.cjs "$@"
   else
     node "$SCRIPT_DIR/import-library-quiz.cjs" "$@"
   fi
 }
 
-# Copy TSVs into the container (skipped in local mode).
+# Copy TSVs + import script into the container. Production Next.js Docker
+# images only ship .next/, public/, and node_modules/ — `scripts/` lives in
+# source but isn't in the runtime layer, so we drop it into /tmp at run time.
 if [[ -n "$CONTAINER" ]]; then
-  echo "→ Copying TSVs into $CONTAINER:/tmp/library-seed/ ..."
-  docker exec "$CONTAINER" rm -rf /tmp/library-seed
+  echo "→ Copying TSVs + import script into $CONTAINER ..."
+  docker exec "$CONTAINER" rm -rf /tmp/library-seed /tmp/import-library-quiz.cjs
   docker cp "$SEED_DIR" "$CONTAINER:/tmp/library-seed"
+  docker cp "$SCRIPT_DIR/import-library-quiz.cjs" "$CONTAINER:/tmp/import-library-quiz.cjs"
 fi
 
 tsv_path() {
