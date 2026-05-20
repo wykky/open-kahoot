@@ -41,33 +41,35 @@ export default function PageLayout({
   const currentYear = new Date().getFullYear();
 
   return (
-    <div className={`min-h-screen ${gradientClasses[gradient]} p-8 flex flex-col ${centerVertically ? 'justify-center' : ''} relative`}>
-      <div className="absolute top-4 right-4 z-50 flex items-center gap-1.5">
+    <div className={`h-dvh overflow-hidden ${gradientClasses[gradient]} p-3 sm:p-6 flex flex-col ${centerVertically ? 'justify-center' : ''} relative`}>
+      <div className="absolute top-3 right-3 z-50 flex items-center gap-1.5">
         <Link
           href="/leaderboard"
           aria-label="Leaderboard"
           title="Leaderboard"
-          className="w-10 h-10 rounded-lg bg-yellow-400 text-black border border-black hover:bg-black hover:text-yellow-400 transition-colors shadow-sm flex items-center justify-center"
+          className="w-9 h-9 sm:w-10 sm:h-10 rounded-lg bg-yellow-400 text-black border border-black hover:bg-black hover:text-yellow-400 transition-colors shadow-sm flex items-center justify-center"
         >
           <Trophy className="w-4 h-4" />
         </Link>
         <UserMenu />
       </div>
-      <div className={`container mx-auto ${maxWidthClasses[maxWidth]} ${centerVertically ? '' : 'flex-1'}`}>
+      <div className={`container mx-auto ${maxWidthClasses[maxWidth]} flex-1 min-h-0 flex flex-col overflow-hidden`}>
         {showLogo && (
           <Link
             href="/"
-            className={`text-4xl font-title mb-8 mt-12 sm:mt-0 text-center ${textColor} block`}
+            className={`text-2xl sm:text-3xl font-title mb-2 sm:mb-4 mt-10 sm:mt-0 text-center ${textColor} block shrink-0`}
           >
             Atenu Live
           </Link>
         )}
-        {children}
+        <div className="flex-1 min-h-0 overflow-hidden flex flex-col">
+          {children}
+        </div>
       </div>
       <footer
-        className={`mt-8 sm:mt-16 text-center text-xs sm:text-sm ${footerTextColor}`}
+        className={`shrink-0 mt-2 text-center text-[10px] sm:text-xs ${footerTextColor}`}
       >
-        <ul className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2">
+        <ul className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1">
           <li>
             <Link href="/how-it-works" className={`underline-offset-2 hover:underline ${footerLinkHover}`}>
               How it works
@@ -91,8 +93,8 @@ export default function PageLayout({
               Terms
             </Link>
           </li>
-          <li aria-hidden="true">·</li>
-          <li>
+          <li aria-hidden="true" className="hidden sm:inline">·</li>
+          <li className="hidden sm:inline">
             <a
               href="https://atenu.org"
               target="_blank"
@@ -102,8 +104,8 @@ export default function PageLayout({
               Atenu.org
             </a>
           </li>
-          <li aria-hidden="true">·</li>
-          <li>© {currentYear} Atenu Live</li>
+          <li aria-hidden="true" className="hidden sm:inline">·</li>
+          <li className="hidden sm:inline">© {currentYear} Atenu Live</li>
         </ul>
       </footer>
     </div>
