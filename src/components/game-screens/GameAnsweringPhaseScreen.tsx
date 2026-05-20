@@ -29,9 +29,9 @@ function SmoothTimerBar({ totalSeconds, timeLeft, resetKey }: { totalSeconds: nu
   }, [resetKey, totalSeconds]);
   const barColor = timeLeft <= URGENT_THRESHOLD_SEC ? 'bg-red-500' : accent.bg;
   return (
-    <div className="w-full bg-gray-200 rounded-full h-3 mt-4 overflow-hidden">
+    <div className="w-full bg-gray-200 rounded-full h-2 mt-2 overflow-hidden">
       <div
-        className={`${barColor} h-3 rounded-full`}
+        className={`${barColor} h-2 rounded-full`}
         style={{ width, transition: `width ${totalSeconds}s linear, background-color 500ms` }}
       />
     </div>
@@ -65,14 +65,14 @@ export default function GameAnsweringPhaseScreen({
   }
 
   return (
-    <div className={`min-h-screen ${getGradient('answering')} p-8`}>
-      <div className="container mx-auto max-w-4xl flex flex-col min-h-[calc(100vh-4rem)]">
-        {/* Timer */}
-        <div className="hidden sm:block text-center mb-8">
-          <div className="flex items-center justify-center gap-2 mb-4">
-            <Clock className="w-8 h-8 text-black" />
+    <div className={`h-dvh overflow-hidden ${getGradient('answering')} p-3 sm:p-6 flex`}>
+      <div className="container mx-auto max-w-4xl flex flex-col min-h-0 flex-1">
+        {/* Timer — compact, desktop only (mobile hides to save space) */}
+        <div className="hidden sm:block text-center mb-3 shrink-0">
+          <div className="flex items-center justify-center gap-2 mb-1">
+            <Clock className="w-6 h-6 text-black" />
           </div>
-          <p className="text-gray-600 text-lg">
+          <p className="text-gray-600 text-sm">
             {isHost ? 'Players are choosing their answers' : 'Choose your answer!'}
           </p>
           <SmoothTimerBar
@@ -86,16 +86,18 @@ export default function GameAnsweringPhaseScreen({
 
         {/* Host Screen - Show question and full answer choices */}
         {isHost && (
-          <HostAnsweringScreen
-            currentQuestion={currentQuestion}
-            timeLeft={timeLeft}
-            answerTime={game?.settings.answerTime || 30}
-          />
+          <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
+            <HostAnsweringScreen
+              currentQuestion={currentQuestion}
+              timeLeft={timeLeft}
+              answerTime={game?.settings.answerTime || 30}
+            />
+          </div>
         )}
 
         {/* Player Device - Show answer choices (and optionally question) */}
         {isPlayer && !hasAnswered && (
-          <div className="flex-1 flex">
+          <div className="flex-1 min-h-0 flex overflow-hidden">
             <PlayerAnsweringScreen
               onSubmitAnswer={onSubmitAnswer}
               question={showOnPlayers ? currentQuestion : undefined}

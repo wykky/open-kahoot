@@ -4,7 +4,6 @@ import { useEffect, useRef } from 'react';
 import { Users, Play } from 'lucide-react';
 import type { Game, Player } from '@/types/game';
 import PageLayout from '@/components/PageLayout';
-import Card from '@/components/Card';
 import GamePinDisplay from '@/components/GamePinDisplay';
 import PlayerList from '@/components/PlayerList';
 import Button from '@/components/Button';
@@ -68,36 +67,32 @@ export default function HostGameLobbyScreen({
 
   return (
     <PageLayout gradient="host" maxWidth="6xl">
-      <Card>
-        <div className="text-center mb-8">
-          <h2 className="text-3xl text-black mb-4 font-subtitle">{game.title}</h2>
-          
-          <GamePinDisplay 
-            pin={game.pin}
-            joinUrl={joinUrl}
-          />
+      <div className="bg-white rounded-2xl border-4 border-black shadow-xl p-4 sm:p-6 flex-1 min-h-0 flex flex-col">
+        <div className="shrink-0 text-center mb-4">
+          <h2 className="text-2xl sm:text-3xl text-black mb-3 font-subtitle">{game.title}</h2>
+          <GamePinDisplay pin={game.pin} joinUrl={joinUrl} />
         </div>
 
         {/* Separator line */}
-        <div className="border-t border-white/20 mb-8"></div>
+        <div className="shrink-0 border-t border-gray-200 mb-3"></div>
 
-        <div className="mb-8">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-2xl text-black flex items-center gap-2 font-subtitle">
-              <Users className="w-6 h-6" />
-              Players ({playersOnly.length})
-            </h2>
-            <Button
-              onClick={handleStartGame}
-              disabled={playersOnly.length === 0}
-              variant="primary"
-              size="lg"
-              icon={Play}
-            >
-              Start game
-            </Button>
-          </div>
-          
+        <div className="shrink-0 flex items-center justify-between mb-3 gap-3 flex-wrap">
+          <h2 className="text-xl sm:text-2xl text-black flex items-center gap-2 font-subtitle">
+            <Users className="w-5 h-5 sm:w-6 sm:h-6" />
+            Players ({playersOnly.length})
+          </h2>
+          <Button
+            onClick={handleStartGame}
+            disabled={playersOnly.length === 0}
+            variant="primary"
+            size="lg"
+            icon={Play}
+          >
+            Start game
+          </Button>
+        </div>
+
+        <div className="flex-1 min-h-0 overflow-y-auto">
           <PlayerList
             players={playersOnly}
             emptyMessage="Waiting for players to join..."
@@ -108,7 +103,7 @@ export default function HostGameLobbyScreen({
             onKickPlayer={onKickPlayer}
           />
         </div>
-      </Card>
+      </div>
     </PageLayout>
   );
 } 

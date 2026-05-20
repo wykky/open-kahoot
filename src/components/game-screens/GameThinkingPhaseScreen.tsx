@@ -25,22 +25,26 @@ export default function GameThinkingPhaseScreen({
 
   return (
     <PageLayout gradient="thinking" maxWidth="4xl" showLogo={false}>
-      <div className="flex flex-col min-h-[calc(100vh-4rem)]">
-        <Timer
-          timeLeft={timeLeft}
-          totalTime={game?.settings.thinkTime || 5}
-          label={isHost ? 'Players are reading the question' : 'Read the question carefully'}
-          variant="thinking"
-        />
+      <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
+        <div className="shrink-0">
+          <Timer
+            timeLeft={timeLeft}
+            totalTime={game?.settings.thinkTime || 5}
+            label={isHost ? 'Players are reading the question' : 'Read the question carefully'}
+            variant="thinking"
+          />
+        </div>
 
         {/* Question Display - Host Screen */}
         {isHost && (
-          <HostThinkingScreen currentQuestion={currentQuestion} />
+          <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
+            <HostThinkingScreen currentQuestion={currentQuestion} />
+          </div>
         )}
 
         {/* Player Device - Waiting (or show question if enabled) */}
         {isPlayer && (
-          <div className="flex-1 flex">
+          <div className="flex-1 min-h-0 flex overflow-hidden">
             <PlayerThinkingScreen
               question={showOnPlayers ? currentQuestion : undefined}
             />

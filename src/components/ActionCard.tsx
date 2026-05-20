@@ -18,19 +18,19 @@ export default function ActionCard({
   buttonText
 }: ActionCardProps) {
   return (
-    <Link href={href} className="group">
-      <div className="bg-white rounded-2xl p-8 border-4 border-black shadow-xl hover:shadow-2xl hover:bg-yellow-50 transition-all duration-300">
-        <div className="text-center">
+    <Link href={href} className="group block h-full">
+      <div className="bg-white rounded-xl p-3 sm:p-6 border-4 border-black shadow-xl hover:shadow-2xl hover:bg-yellow-50 transition-all duration-300 h-full flex flex-col">
+        <div className="text-center flex-1 flex flex-col items-center justify-center">
           {Icon && (
-            <div className="w-20 h-20 bg-black rounded-full flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform">
-              <Icon className="w-10 h-10 text-yellow-400" />
+            <div className="w-12 h-12 sm:w-20 sm:h-20 bg-black rounded-full flex items-center justify-center mx-auto mb-2 sm:mb-4 group-hover:scale-110 transition-transform shrink-0">
+              <Icon className="w-6 h-6 sm:w-10 sm:h-10 text-yellow-400" />
             </div>
           )}
-          <h2 className="text-3xl text-black mb-4 font-subtitle">{title}</h2>
-          <p className="text-gray-600 text-lg mb-6">{description}</p>
-          <div className="bg-yellow-400 text-black border-2 border-black py-3 px-6 rounded-lg font-semibold group-hover:bg-black group-hover:text-yellow-400 transition-colors">
-            {buttonText}
-          </div>
+          <h2 className="text-xl sm:text-3xl text-black mb-1 sm:mb-3 font-subtitle">{title}</h2>
+          <p className="text-gray-600 text-xs sm:text-base mb-2 sm:mb-4 leading-snug">{description}</p>
+        </div>
+        <div className="bg-yellow-400 text-black border-2 border-black py-2 sm:py-3 px-4 sm:px-6 rounded-lg font-semibold text-sm sm:text-base group-hover:bg-black group-hover:text-yellow-400 transition-colors text-center shrink-0">
+          {buttonText}
         </div>
       </div>
     </Link>

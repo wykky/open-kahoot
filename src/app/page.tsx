@@ -11,14 +11,15 @@ export default function Home() {
     <PageLayout gradient="home" showLogo={false}>
       <Hero title="Atenu Live" />
 
-      {/* Action Cards */}
-      <div className="max-w-4xl mx-auto grid md:grid-cols-2 gap-8">
+      {/* Action cards — side-by-side on every viewport. h-full lets each card
+          fill the remaining vertical space so this region is self-balancing. */}
+      <div className="flex-1 min-h-0 max-w-4xl mx-auto w-full grid grid-cols-2 gap-3 sm:gap-6">
         <ActionCard
           href="/join"
           icon={MonitorPlay}
           variant="join"
           title="Play"
-          description="Enter a game pin to join an existing quiz and compete with other players"
+          description="Join with a PIN"
           buttonText="Play →"
         />
         <ActionCard
@@ -26,16 +27,16 @@ export default function Home() {
           icon={MonitorCog}
           variant="host"
           title="Host"
-          description="Create your own quiz with custom questions and let players join with a game pin"
+          description="Create your quiz"
           buttonText="Host →"
         />
       </div>
 
       {/* "New here?" link */}
-      <div className="text-center mt-8">
+      <div className="shrink-0 text-center mt-2 sm:mt-4">
         <Link
           href="/how-it-works"
-          className="text-sm text-gray-700 underline underline-offset-4 hover:text-black"
+          className="text-xs sm:text-sm text-gray-700 underline underline-offset-4 hover:text-black"
         >
           New here? How it works →
         </Link>

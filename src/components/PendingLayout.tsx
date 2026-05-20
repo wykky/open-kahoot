@@ -13,18 +13,18 @@ interface PendingLayoutProps {
 
 const PendingLayout = ({ icon, iconColor, title, description, ignoreMinHeight }: PendingLayoutProps) => {
     return (
-        <div className={`${ignoreMinHeight ? '' : 'min-h-screen'} ${getGradient('waiting')} flex items-center justify-center p-8`}>
+        <div className={`${ignoreMinHeight ? '' : 'h-dvh overflow-hidden'} ${getGradient('waiting')} flex items-center justify-center p-4 sm:p-8`}>
           <div className="text-center">
             {icon && (
-              <AnimatedIcon icon={icon} size="md" iconColor={iconColor || "text-yellow-500"} className="mb-4" />
+              <AnimatedIcon icon={icon} size="md" iconColor={iconColor || "text-yellow-500"} className="mb-3" />
             )}
-            <h1 className="text-3xl font-bold text-black mb-4">
+            <h1 className="text-2xl sm:text-3xl font-bold text-black mb-2 sm:mb-3">
               {title}
             </h1>
-            <p className="text-gray-600 text-lg">
+            <p className="text-gray-600 text-base sm:text-lg">
               {description}
             </p>
-            <div className="flex justify-center mt-6">
+            <div className="flex justify-center mt-4 sm:mt-5">
               <div className="animate-pulse flex space-x-1">
                 <div className="w-2 h-2 bg-gray-400 rounded-full"></div>
                 <div className="w-2 h-2 bg-gray-400 rounded-full"></div>

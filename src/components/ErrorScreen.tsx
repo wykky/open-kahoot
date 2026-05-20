@@ -24,18 +24,18 @@ export default function ErrorScreen({
 }: ErrorScreenProps) {
   return (
     <>
-      <div className={`min-h-screen ${getGradient('waiting')} flex items-center justify-center p-8`}>
-        <div className="text-center">
-          <AnimatedIcon icon={Ban} size="md" iconBgColor="bg-red-200" iconColor="text-red-500" className="mb-4" />
-          <h1 className="text-3xl font-bold text-black mb-4">
+      <div className={`h-dvh overflow-hidden ${getGradient('waiting')} flex items-center justify-center p-4 sm:p-8`}>
+        <div className="text-center max-w-md">
+          <AnimatedIcon icon={Ban} size="md" iconBgColor="bg-red-200" iconColor="text-red-500" className="mb-3" />
+          <h1 className="text-2xl sm:text-3xl font-bold text-black mb-2 sm:mb-3">
             {title}
           </h1>
-          <p className="text-gray-600 text-lg">
+          <p className="text-gray-600 text-base sm:text-lg">
             {message}
           </p>
-          <div className="mt-8">
+          <div className="mt-5 sm:mt-6">
             {autoRedirect && (
-              <p className="text-gray-500 mb-4">{autoRedirect.message}</p>
+              <p className="text-gray-500 mb-3 text-sm sm:text-base">{autoRedirect.message}</p>
             )}
 
             {actionText && onAction && (
@@ -53,4 +53,4 @@ export default function ErrorScreen({
 
     </>
   );
-} 
+}

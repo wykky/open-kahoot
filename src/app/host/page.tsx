@@ -27,6 +27,8 @@ export default function HostPage() {
   const { data: session } = useSession();
   const dbUserId = ((session?.user as { dbUserId?: string } | undefined)?.dbUserId) ?? null;
   const [questions, setQuestions] = useState<Question[]>([]);
+  const [quizTitle, setQuizTitle] = useState<string>('Quiz Game');
+  const [currentQuestionIndex, setCurrentQuestionIndex] = useState<number>(0);
   const [gameSettings, setGameSettings] = useState<GameSettings>({
     thinkTime: 5,
     answerTime: 20,
@@ -34,6 +36,17 @@ export default function HostPage() {
   });
   const [game, setGame] = useState<Game | null>(null);
   const [hostToken, setHostToken] = useState<string | null>(null);
+
+  // Clamp currentQuestionIndex any time it falls outside the questions[] bounds.
+  // Don't snap to -1 — for the empty state we keep it at 0; the screen branches on
+  // questions.length === 0 before reading questions[currentQuestionIndex].
+  useEffect(() => {
+    if (questions.length === 0 && currentQuestionIndex !== 0) {
+      setCurrentQuestionIndex(0);
+    } else if (questions.length > 0 && currentQuestionIndex >= questions.length) {
+      setCurrentQuestionIndex(questions.length - 1);
+    }
+  }, [questions.length, currentQuestionIndex]);
 
   const router = useRouter();
 
@@ -202,6 +215,8 @@ export default function HostPage() {
     try {
       const importedQuestions = await parseTsvFile(file);
       setQuestions(importedQuestions);
+      // Jump to the first imported question (which is index 0 because we replace).
+      setCurrentQuestionIndex(0);
       event.target.value = '';
     } catch (error) {
       console.error('Import error:', error);
@@ -220,6 +235,10 @@ export default function HostPage() {
       const newQuestions = [...questions];
       newQuestions.splice(index, 0, ...importedQuestions);
       setQuestions(newQuestions);
+      // Jump to the first newly inserted question so the host can see what just landed.
+      if (importedQuestions.length > 0) {
+        setCurrentQuestionIndex(index);
+      }
       event.target.value = '';
     } catch (error) {
       console.error('Append error:', error);
@@ -242,8 +261,12 @@ export default function HostPage() {
       const newQuestions = [...questions];
       newQuestions.splice(index, 0, newQuestion);
       setQuestions(newQuestions);
+      setCurrentQuestionIndex(index);
     } else {
+      const nextLen = questions.length;
       setQuestions([...questions, newQuestion]);
+      // Append + jump to the new last slot. nextLen is the index it'll occupy.
+      setCurrentQuestionIndex(nextLen);
     }
   };
 
@@ -288,7 +311,16 @@ export default function HostPage() {
   };
 
   const removeQuestion = (index: number) => {
-    setQuestions(questions.filter((_, i) => i !== index));
+    const next = questions.filter((_, i) => i !== index);
+    setQuestions(next);
+    // Snap to max(idx-1, 0). The clamp effect will also catch this, but updating
+    // here avoids a one-frame flash of a wrong question.
+    setCurrentQuestionIndex((prev) => {
+      if (next.length === 0) return 0;
+      if (index < prev) return Math.max(prev - 1, 0);
+      if (index === prev) return Math.max(prev - 1, 0);
+      return Math.min(prev, next.length - 1);
+    });
   };
 
   const moveQuestion = (index: number, direction: 'up' | 'down') => {
@@ -302,7 +334,7 @@ export default function HostPage() {
   const createGame = () => {
     if (questions.length === 0) return;
     const socket = getSocket();
-    const title = 'Quiz Game';
+    const title = quizTitle.trim() || 'Quiz Game';
     socket.emit('createGame', title, questions, gameSettings, dbUserId, (createdGame: Game, token: string) => {
       setGame(createdGame);
       setHostToken(token);
@@ -402,7 +434,12 @@ export default function HostPage() {
           explanation: q.explanation || undefined,
         };
       });
+      const insertIndex = questions.length;
       setQuestions([...questions, ...newQuestions]);
+      // Jump to the first newly generated question so the host immediately sees the AI output.
+      if (newQuestions.length > 0) {
+        setCurrentQuestionIndex(insertIndex);
+      }
       alert(`Successfully generated ${newQuestions.length} questions!`);
     } catch (error) {
       console.error('Error generating questions:', error);
@@ -437,6 +474,10 @@ export default function HostPage() {
     <HostQuizCreationScreen
       questions={questions}
       gameSettings={gameSettings}
+      title={quizTitle}
+      onUpdateTitle={setQuizTitle}
+      currentQuestionIndex={currentQuestionIndex}
+      onChangeCurrentQuestionIndex={setCurrentQuestionIndex}
       onUpdateSettings={setGameSettings}
       onAddQuestion={addQuestion}
       onAppendTSV={handleAppendTSV}

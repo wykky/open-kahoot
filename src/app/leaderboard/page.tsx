@@ -13,6 +13,8 @@ export const dynamic = 'force-dynamic';
 
 type Range = 'all' | 'month' | 'week';
 
+const PAGE_SIZE = 8;
+
 function rangeToSinceTs(range: Range): number {
   if (range === 'week') {
     const d = new Date();
@@ -53,21 +55,32 @@ function withCompetitionRanks(entries: LeaderboardEntry[]): Array<LeaderboardEnt
 export default async function LeaderboardPage({
   searchParams,
 }: {
-  searchParams: Promise<{ range?: string }>;
+  searchParams: Promise<{ range?: string; page?: string }>;
 }) {
   const sp = await searchParams;
   const rawRange = (sp.range as Range) || 'all';
   const range: Range = rawRange === 'week' || rawRange === 'month' ? rawRange : 'all';
   const sinceTs = rangeToSinceTs(range);
-  const entries = withCompetitionRanks(getLeaderboard({ sinceTs, limit: 50 }));
+  const allEntries = withCompetitionRanks(getLeaderboard({ sinceTs, limit: 50 }));
+
+  const totalPages = Math.max(1, Math.ceil(allEntries.length / PAGE_SIZE));
+  const rawPage = parseInt(sp.page || '1', 10);
+  const page = Number.isFinite(rawPage) && rawPage >= 1 ? Math.min(rawPage, totalPages) : 1;
+  const start = (page - 1) * PAGE_SIZE;
+  const entries = allEntries.slice(start, start + PAGE_SIZE);
+
+  const hasPrev = page > 1;
+  const hasNext = page < totalPages;
+  const prevHref = `/leaderboard?range=${range}&page=${page - 1}`;
+  const nextHref = `/leaderboard?range=${range}&page=${page + 1}`;
 
   return (
     <PageLayout gradient="leaderboard" maxWidth="2xl">
-      <div className="bg-white rounded-2xl border-4 border-black shadow-xl p-4 sm:p-8">
-        <h1 className="text-3xl sm:text-4xl font-title text-black text-center mb-6">Leaderboard</h1>
+      <div className="bg-white rounded-xl border-4 border-black shadow-xl p-4 sm:p-6 flex-1 min-h-0 flex flex-col">
+        <h1 className="shrink-0 text-2xl sm:text-3xl font-title text-black text-center mb-3">Leaderboard</h1>
 
         {/* Tabs */}
-        <div className="flex justify-center gap-2 mb-6">
+        <div className="shrink-0 flex justify-center gap-2 mb-3">
           {([
             ['all', 'All-time'],
             ['month', 'This month'],
@@ -76,7 +89,7 @@ export default async function LeaderboardPage({
             <Link
               key={key}
               href={`/leaderboard?range=${key}`}
-              className={`px-4 py-2 rounded-lg text-sm font-bold border-2 transition-colors ${
+              className={`px-3 py-1.5 rounded-lg text-xs sm:text-sm font-bold border-2 transition-colors ${
                 range === key
                   ? 'bg-yellow-400 text-black border-black'
                   : 'bg-white text-black border-gray-300 hover:bg-yellow-100'
@@ -88,14 +101,14 @@ export default async function LeaderboardPage({
         </div>
 
         {/* Table */}
-        {entries.length === 0 ? (
-          <p className="text-center text-gray-500 py-12">No scores yet. Sign in and play a game!</p>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm sm:text-base">
+        <div className="flex-1 min-h-0 overflow-hidden">
+          {entries.length === 0 ? (
+            <p className="text-center text-gray-500 py-8">No scores yet. Sign in and play a game!</p>
+          ) : (
+            <table className="w-full text-left text-xs sm:text-sm">
               <thead>
                 <tr className="border-b-2 border-black text-gray-700">
-                  <th className="py-2 pr-2 w-12">#</th>
+                  <th className="py-2 pr-2 w-10">#</th>
                   <th className="py-2 pr-2">Player</th>
                   <th className="py-2 pr-2 text-right">Points</th>
                   <th className="py-2 pr-2 text-right hidden sm:table-cell">Games</th>
@@ -105,36 +118,64 @@ export default async function LeaderboardPage({
               <tbody>
                 {entries.map((e) => (
                   <tr key={e.user_id} className="border-b border-gray-200 hover:bg-yellow-50">
-                    <td className="py-3 pr-2 font-bold">
+                    <td className="p-2 font-bold">
                       {e.rank === 1 ? '🥇' : e.rank === 2 ? '🥈' : e.rank === 3 ? '🥉' : e.rank}
                     </td>
-                    <td className="py-3 pr-2 flex items-center gap-2">
-                      {e.avatar_url ? (
-                        <img
-                          src={e.avatar_url}
-                          alt={e.name || ''}
-                          className="w-8 h-8 rounded-full border border-gray-300"
-                        />
-                      ) : (
-                        <div className="w-8 h-8 rounded-full bg-yellow-400 text-black flex items-center justify-center font-bold text-sm">
-                          {(e.name || '?')[0].toUpperCase()}
-                        </div>
-                      )}
-                      <span className="font-medium">{e.name}</span>
+                    <td className="p-2">
+                      <div className="flex items-center gap-2">
+                        {e.avatar_url ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img
+                            src={e.avatar_url}
+                            alt={e.name || ''}
+                            className="w-7 h-7 rounded-full border border-gray-300"
+                          />
+                        ) : (
+                          <div className="w-7 h-7 rounded-full bg-yellow-400 text-black flex items-center justify-center font-bold text-xs">
+                            {(e.name || '?')[0].toUpperCase()}
+                          </div>
+                        )}
+                        <span className="font-medium truncate max-w-[14ch] sm:max-w-none">{e.name}</span>
+                      </div>
                     </td>
-                    <td className="py-3 pr-2 text-right font-bold">{e.total_points.toLocaleString()}</td>
-                    <td className="py-3 pr-2 text-right hidden sm:table-cell">{e.games_played}</td>
-                    <td className="py-3 pr-2 text-right hidden sm:table-cell">{correctPct(e)}</td>
+                    <td className="p-2 text-right font-bold">{e.total_points.toLocaleString()}</td>
+                    <td className="p-2 text-right hidden sm:table-cell">{e.games_played}</td>
+                    <td className="p-2 text-right hidden sm:table-cell">{correctPct(e)}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
-          </div>
-        )}
+          )}
+        </div>
 
-        <p className="text-center text-xs text-gray-500 mt-6">
-          Only signed-in players (Google or Telegram) appear here. Anonymous nickname players are not tracked.
-        </p>
+        {/* Pagination footer */}
+        <div className="shrink-0 flex items-center justify-between mt-3 text-xs sm:text-sm">
+          <Link
+            href={prevHref}
+            aria-disabled={!hasPrev}
+            className={`px-3 py-1.5 rounded-lg font-bold border-2 transition-colors ${
+              hasPrev
+                ? 'bg-white text-black border-black hover:bg-yellow-400'
+                : 'bg-gray-100 text-gray-400 border-gray-200 pointer-events-none'
+            }`}
+          >
+            ← Prev
+          </Link>
+          <span className="text-gray-600">
+            Page {page} of {totalPages}
+          </span>
+          <Link
+            href={nextHref}
+            aria-disabled={!hasNext}
+            className={`px-3 py-1.5 rounded-lg font-bold border-2 transition-colors ${
+              hasNext
+                ? 'bg-white text-black border-black hover:bg-yellow-400'
+                : 'bg-gray-100 text-gray-400 border-gray-200 pointer-events-none'
+            }`}
+          >
+            Next →
+          </Link>
+        </div>
       </div>
     </PageLayout>
   );

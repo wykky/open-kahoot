@@ -9,6 +9,10 @@ export default function DebugHostQuizCreationPage() {
     <HostQuizCreationScreen
       questions={mockQuestions}
       gameSettings={mockGameSettings}
+      title="Debug quiz"
+      onUpdateTitle={() => {}}
+      currentQuestionIndex={0}
+      onChangeCurrentQuestionIndex={() => {}}
       onUpdateSettings={() => {}}
       onAddQuestion={() => {}}
       onAppendTSV={() => {}}
