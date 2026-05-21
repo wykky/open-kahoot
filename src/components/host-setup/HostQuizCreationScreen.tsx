@@ -86,6 +86,7 @@ export default function HostQuizCreationScreen({
 
   return (
     <PageLayout gradient="host" maxWidth="4xl">
+      <h1 className="sr-only">Create a new quiz</h1>
       <div className="bg-white rounded-2xl border-4 border-black shadow-xl p-3 sm:p-5 flex-1 min-h-0 flex flex-col">
         {/* Top bar: editable title + Q n of N + settings gear */}
         <div className="shrink-0 flex items-center gap-2 sm:gap-3 mb-3 pb-3 border-b border-gray-200">
@@ -202,6 +203,7 @@ export default function HostQuizCreationScreen({
               <input
                 type="file"
                 accept=".tsv,.txt"
+                aria-label="Append questions from a TSV file"
                 onChange={(e) => onAppendTSV(safeIndex + 1, e)}
                 className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
               />

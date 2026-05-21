@@ -35,6 +35,7 @@ export default function HostEmptyQuestionsState({
           <input
             type="file"
             accept=".tsv,.txt"
+            aria-label="Import a TSV quiz file"
             onChange={onFileImport}
             className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
           />

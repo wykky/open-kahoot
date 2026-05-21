@@ -13,6 +13,11 @@ import { getGamesByHost, type HostGameSummary } from '@/lib/db';
 
 export const dynamic = 'force-dynamic';
 
+export const metadata = {
+  title: 'My quizzes',
+  description: 'Your past quizzes on Atenu Live — review results and re-host any time.',
+};
+
 const PAGE_SIZE = 6;
 
 function formatDate(ts: number | null): string {

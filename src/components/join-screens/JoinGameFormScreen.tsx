@@ -121,6 +121,8 @@ export default function JoinGameFormScreen() {
           label="Game PIN"
           type="tel"
           inputMode="numeric"
+          autoComplete="one-time-code"
+          required
           value={pin}
           onChange={
             pinLocked
@@ -141,6 +143,8 @@ export default function JoinGameFormScreen() {
         <Input
           label="Your Name"
           type="text"
+          autoComplete="nickname"
+          required
           value={playerName}
           onChange={(e) => {
             setPlayerName(e.target.value.slice(0, 20));

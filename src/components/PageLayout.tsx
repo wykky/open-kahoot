@@ -42,7 +42,14 @@ export default function PageLayout({
 
   return (
     <div className={`h-dvh overflow-hidden ${gradientClasses[gradient]} p-3 sm:p-6 flex flex-col ${centerVertically ? 'justify-center' : ''} relative`}>
-      <div className="absolute top-3 right-3 z-50 flex items-center gap-1.5">
+      {/* Skip-to-content for keyboard users — invisible until focused. */}
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-[60] focus:bg-yellow-400 focus:text-black focus:border-2 focus:border-black focus:px-3 focus:py-1.5 focus:rounded-lg focus:font-bold focus:text-sm"
+      >
+        Skip to content
+      </a>
+      <nav aria-label="Top navigation" className="absolute top-3 right-3 z-50 flex items-center gap-1.5">
         <Link
           href="/leaderboard"
           aria-label="Leaderboard"
@@ -52,11 +59,12 @@ export default function PageLayout({
           <Trophy className="w-4 h-4" />
         </Link>
         <UserMenu />
-      </div>
-      <div className={`container mx-auto ${maxWidthClasses[maxWidth]} flex-1 min-h-0 flex flex-col overflow-hidden`}>
+      </nav>
+      <main id="main-content" className={`container mx-auto ${maxWidthClasses[maxWidth]} flex-1 min-h-0 flex flex-col overflow-hidden`}>
         {showLogo && (
           <Link
             href="/"
+            aria-label="Atenu Live — home"
             className={`text-2xl sm:text-3xl font-title mb-2 sm:mb-4 mt-10 sm:mt-0 text-center ${textColor} block shrink-0`}
           >
             Atenu Live
@@ -65,7 +73,7 @@ export default function PageLayout({
         <div className="flex-1 min-h-0 overflow-hidden flex flex-col">
           {children}
         </div>
-      </div>
+      </main>
       <footer
         className={`shrink-0 mt-2 text-center text-[10px] sm:text-xs ${footerTextColor}`}
       >

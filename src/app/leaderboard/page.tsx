@@ -11,6 +11,15 @@ import { getLeaderboard, type LeaderboardEntry } from '@/lib/db';
 
 export const dynamic = 'force-dynamic';
 
+export const metadata = {
+  title: 'Leaderboard',
+  description: 'See the top quiz players across Atenu Live — all-time, monthly, and weekly leaders.',
+  openGraph: {
+    title: 'Leaderboard — Atenu Live',
+    description: 'Top quiz players across Atenu Live — all-time, monthly, and weekly leaders.',
+  },
+};
+
 type Range = 'all' | 'month' | 'week';
 
 const PAGE_SIZE = 8;
@@ -79,25 +88,31 @@ export default async function LeaderboardPage({
       <div className="bg-white rounded-xl border-4 border-black shadow-xl p-4 sm:p-6 flex-1 min-h-0 flex flex-col">
         <h1 className="shrink-0 text-2xl sm:text-3xl font-title text-black text-center mb-3">Leaderboard</h1>
 
-        {/* Tabs */}
-        <div className="shrink-0 flex justify-center gap-2 mb-3">
+        {/* Tabs — Link with aria-current for screen-reader users. */}
+        <div role="tablist" aria-label="Time range" className="shrink-0 flex justify-center gap-2 mb-3">
           {([
             ['all', 'All-time'],
             ['month', 'This month'],
             ['week', 'This week'],
-          ] as [Range, string][]).map(([key, label]) => (
-            <Link
-              key={key}
-              href={`/leaderboard?range=${key}`}
-              className={`px-3 py-1.5 rounded-lg text-xs sm:text-sm font-bold border-2 transition-colors ${
-                range === key
-                  ? 'bg-yellow-400 text-black border-black'
-                  : 'bg-white text-black border-gray-300 hover:bg-yellow-100'
-              }`}
-            >
-              {label}
-            </Link>
-          ))}
+          ] as [Range, string][]).map(([key, label]) => {
+            const isActive = range === key;
+            return (
+              <Link
+                key={key}
+                href={`/leaderboard?range=${key}`}
+                role="tab"
+                aria-current={isActive ? 'page' : undefined}
+                aria-selected={isActive}
+                className={`px-3 py-1.5 rounded-lg text-xs sm:text-sm font-bold border-2 transition-colors ${
+                  isActive
+                    ? 'bg-yellow-400 text-black border-black'
+                    : 'bg-white text-black border-gray-300 hover:bg-yellow-100'
+                }`}
+              >
+                {label}
+              </Link>
+            );
+          })}
         </div>
 
         {/* Table */}

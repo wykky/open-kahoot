@@ -29,6 +29,7 @@ export default function AddQuestionButton({ onAddQuestion, onAppendTSV, onOpenAI
           <input
             type="file"
             accept=".tsv,.txt"
+            aria-label="Append questions from a TSV file"
             onChange={(e) => onAppendTSV(index, e)}
             className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
           />
