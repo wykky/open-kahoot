@@ -12,9 +12,10 @@ import PageLayout from '@/components/PageLayout';
 export const dynamic = 'force-static';
 
 export const metadata = {
-  title: 'Terms of service — Atenu Live',
+  title: 'Terms of service',
   description:
     'The simple rules for using Atenu Live — free, classroom-friendly, no abuse, no spam.',
+  alternates: { canonical: '/terms' },
 };
 
 const lastUpdated = 'May 2026';

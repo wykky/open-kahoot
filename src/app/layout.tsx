@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Galindo, Coiny, Noto_Sans_Ethiopic } from "next/font/google";
 import "./globals.css";
 import SessionWrapper from "@/components/SessionWrapper";
@@ -40,6 +40,7 @@ export const metadata: Metadata = {
   },
   description: DEFAULT_DESCRIPTION,
   applicationName: SITE_NAME,
+  alternates: { canonical: '/' },
   openGraph: {
     type: "website",
     siteName: SITE_NAME,
@@ -55,6 +56,32 @@ export const metadata: Metadata = {
   },
 };
 
+// PWA + mobile browser theme colour matches the brand yellow so the
+// address bar tint and Android task-switcher card stay on-brand.
+export const viewport: Viewport = {
+  themeColor: '#FFC600',
+};
+
+const webApplicationJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'WebApplication',
+  name: SITE_NAME,
+  url: SITE_URL,
+  description: DEFAULT_DESCRIPTION,
+  applicationCategory: 'EducationalApplication',
+  operatingSystem: 'Any (web browser)',
+  inLanguage: 'en',
+  audience: {
+    '@type': 'EducationalAudience',
+    educationalRole: 'student',
+  },
+  offers: {
+    '@type': 'Offer',
+    price: '0',
+    priceCurrency: 'USD',
+  },
+};
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -65,6 +92,17 @@ export default function RootLayout({
       <body
         className={`${galindo.variable} ${chango.variable} ${notoEthiopic.variable} antialiased`}
       >
+        {/* Structured data — tells Google this is an EducationalApplication.
+            Content is built from internal constants (no user input), and we
+            escape < characters so a future change can't accidentally break
+            out of the script tag. Standard safe pattern for inline JSON-LD. */}
+        <script
+          type="application/ld+json"
+          // eslint-disable-next-line react/no-danger
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify(webApplicationJsonLd).replace(/</g, '\\u003c'),
+          }}
+        />
         <SessionWrapper>
           {children}
         </SessionWrapper>

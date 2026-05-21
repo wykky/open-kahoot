@@ -7,6 +7,7 @@ import type { Metadata } from 'next';
 export const metadata: Metadata = {
   title: 'Host a quiz',
   description: 'Build a quiz and share a PIN with your class. Free, mobile-first, designed for Ethiopian classrooms.',
+  alternates: { canonical: '/host' },
   openGraph: {
     title: 'Host a quiz — Atenu Live',
     description: 'Build a quiz and share a PIN with your class. Free, mobile-first.',

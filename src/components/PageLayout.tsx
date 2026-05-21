@@ -112,7 +112,7 @@ export default function PageLayout({
             <a
               href="https://atenu.org"
               target="_blank"
-              rel="noopener"
+              rel="noopener noreferrer"
               className={`underline-offset-2 hover:underline ${footerLinkHover}`}
             >
               Atenu.org

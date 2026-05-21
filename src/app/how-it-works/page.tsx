@@ -21,9 +21,10 @@ import PageLayout from '@/components/PageLayout';
 export const dynamic = 'force-static';
 
 export const metadata = {
-  title: 'How it works — Atenu Live',
+  title: 'How it works',
   description:
     'Atenu Live is a free, live multiplayer quiz for Ethiopian high-school students. Hosts share a PIN, players join from their phone, and everyone races to answer questions fastest.',
+  alternates: { canonical: '/how-it-works' },
 };
 
 type Faq = { q: string; a: string };
@@ -148,7 +149,7 @@ export default function HowItWorksPage() {
                 href="https://atenu.org"
                 className="text-yellow-700 underline hover:text-yellow-800"
                 target="_blank"
-                rel="noopener"
+                rel="noopener noreferrer"
               >
                 Atenu.org
               </a>

@@ -13,9 +13,10 @@ import PageLayout from '@/components/PageLayout';
 export const dynamic = 'force-static';
 
 export const metadata = {
-  title: 'Privacy policy — Atenu Live',
+  title: 'Privacy policy',
   description:
     'What Atenu Live collects, how long we keep it, and who we share it with. Built for Ethiopian high-school classrooms.',
+  alternates: { canonical: '/privacy' },
 };
 
 const lastUpdated = 'May 2026';

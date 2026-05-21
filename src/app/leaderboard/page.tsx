@@ -14,6 +14,7 @@ export const dynamic = 'force-dynamic';
 export const metadata = {
   title: 'Leaderboard',
   description: 'See the top quiz players across Atenu Live — all-time, monthly, and weekly leaders.',
+  alternates: { canonical: '/leaderboard' },
   openGraph: {
     title: 'Leaderboard — Atenu Live',
     description: 'Top quiz players across Atenu Live — all-time, monthly, and weekly leaders.',

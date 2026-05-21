@@ -17,6 +17,7 @@ export const dynamic = 'force-dynamic';
 export const metadata = {
   title: 'Quiz library',
   description: 'Browse curated, ESSLCE-aligned quizzes by subject and grade. One tap to host with your class.',
+  alternates: { canonical: '/library' },
   openGraph: {
     title: 'Quiz library — Atenu Live',
     description: 'Browse curated, ESSLCE-aligned quizzes by subject and grade. One tap to host with your class.',
