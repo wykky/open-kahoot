@@ -27,7 +27,10 @@ export default function HostPage() {
   const { data: session } = useSession();
   const dbUserId = ((session?.user as { dbUserId?: string } | undefined)?.dbUserId) ?? null;
   const [questions, setQuestions] = useState<Question[]>([]);
-  const [quizTitle, setQuizTitle] = useState<string>('Quiz Game');
+  // Empty by default so hosts have to consciously name their quiz; the
+  // createGame send falls back to "Untitled quiz" only if they truly leave it
+  // blank. Saves accidentally-shipped "Quiz Game" titles in /host/history.
+  const [quizTitle, setQuizTitle] = useState<string>('');
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState<number>(0);
   const [gameSettings, setGameSettings] = useState<GameSettings>({
     thinkTime: 5,
@@ -334,7 +337,7 @@ export default function HostPage() {
   const createGame = () => {
     if (questions.length === 0) return;
     const socket = getSocket();
-    const title = quizTitle.trim() || 'Quiz Game';
+    const title = quizTitle.trim() || 'Untitled quiz';
     socket.emit('createGame', title, questions, gameSettings, dbUserId, (createdGame: Game, token: string) => {
       setGame(createdGame);
       setHostToken(token);

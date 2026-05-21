@@ -19,7 +19,7 @@ export default function ActionCard({
 }: ActionCardProps) {
   return (
     <Link href={href} className="group block h-full">
-      <div className="bg-white rounded-xl p-3 sm:p-6 border-4 border-black shadow-xl hover:shadow-2xl hover:bg-yellow-50 transition-all duration-300 h-full flex flex-col">
+      <div className="bg-white rounded-xl p-3 sm:p-6 border-4 border-black shadow-xl group-hover:shadow-2xl group-hover:bg-yellow-50 group-hover:-translate-y-1 group-focus-visible:ring-4 group-focus-visible:ring-yellow-400 transition-all duration-200 h-full flex flex-col">
         <div className="text-center flex-1 flex flex-col items-center justify-center">
           {Icon && (
             <div className="w-12 h-12 sm:w-20 sm:h-20 bg-black rounded-full flex items-center justify-center mx-auto mb-2 sm:mb-4 group-hover:scale-110 transition-transform shrink-0">

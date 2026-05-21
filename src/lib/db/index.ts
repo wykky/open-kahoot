@@ -157,6 +157,46 @@ function migrate(d: Database.Database): void {
   addColumnIfMissing(d, 'questions', 'question_type', "TEXT NOT NULL DEFAULT 'single'");
   addColumnIfMissing(d, 'questions', 'correct_answers', 'TEXT'); // JSON array of indices for multi-select
   addColumnIfMissing(d, 'answers', 'answer_indices', 'TEXT');    // JSON-array selection for multi-select
+
+  // Display name shown on public leaderboards instead of the full Google
+  // account name. NULL falls back to the legacy `name` column. Populated
+  // on sign-in by NextAuth's jwt callback.
+  addColumnIfMissing(d, 'users', 'display_name', 'TEXT');
+
+  // Hide the auto-seeded "sample" library quiz once real curated quizzes
+  // exist. The sample's only purpose was to keep /library non-empty on the
+  // first deploy; now that ten real quizzes live alongside it, it's noise.
+  // Idempotent: matches only the seed slug and only unpublishes once.
+  d.prepare(
+    `UPDATE quiz_library
+        SET published = 0
+      WHERE slug = 'sample-ethiopia-geography'
+        AND published = 1
+        AND (SELECT COUNT(*) FROM quiz_library WHERE slug != 'sample-ethiopia-geography' AND published = 1) > 0`
+  ).run();
+
+  // One-time backfill: pre-existing user rows have full Google names
+  // ("WILFRID NGUESSAN"). Pull the first whitespace-delimited token, lowercase
+  // it, then title-case via UPPER + LOWER. Skips rows that already have
+  // display_name set, so this is idempotent and safe to run on every boot.
+  d.prepare(
+    `UPDATE users
+       SET display_name =
+         UPPER(SUBSTR(name, 1, 1))
+           || LOWER(
+                SUBSTR(
+                  name,
+                  2,
+                  CASE
+                    WHEN INSTR(name, ' ') > 0 THEN INSTR(name, ' ') - 2
+                    ELSE LENGTH(name) - 1
+                  END
+                )
+              )
+     WHERE display_name IS NULL
+       AND name IS NOT NULL
+       AND TRIM(name) != ''`
+  ).run();
 }
 
 function addColumnIfMissing(d: Database.Database, table: string, column: string, definition: string): void {
@@ -176,10 +216,27 @@ export interface DbUser {
   provider_user_id: string;
   email: string | null;
   name: string | null;
+  display_name: string | null;
   avatar_url: string | null;
   vip: number;
   created_at: number;
   last_seen_at: number;
+}
+
+/**
+ * Derive a sensible default display_name from a full account name.
+ * - "WILFRID NGUESSAN" → "Wilfrid"
+ * - "Sara T."         → "Sara"
+ * - null / empty      → null (caller falls back to legacy `name`)
+ *
+ * We strip after the first space and title-case the result so the public
+ * leaderboard doesn't shout the host's last name back at them.
+ */
+function deriveDisplayName(fullName: string | null | undefined): string | null {
+  if (!fullName) return null;
+  const first = fullName.trim().split(/\s+/)[0];
+  if (!first) return null;
+  return first.charAt(0).toUpperCase() + first.slice(1).toLowerCase();
 }
 
 export function upsertUser(input: {
@@ -196,10 +253,26 @@ export function upsertUser(input: {
     .get(input.provider, input.providerUserId) as DbUser | undefined;
 
   if (existing) {
+    // Only seed display_name on rows that haven't been set yet, so future host
+    // edits via /account aren't clobbered by every sign-in.
+    const seededDisplayName = existing.display_name ?? deriveDisplayName(input.name ?? existing.name);
     d.prepare(
-      'UPDATE users SET email = COALESCE(?, email), name = COALESCE(?, name), avatar_url = COALESCE(?, avatar_url), last_seen_at = ? WHERE id = ?'
-    ).run(input.email ?? null, input.name ?? null, input.avatarUrl ?? null, now, existing.id);
-    return { ...existing, email: input.email ?? existing.email, name: input.name ?? existing.name, last_seen_at: now };
+      'UPDATE users SET email = COALESCE(?, email), name = COALESCE(?, name), display_name = COALESCE(?, display_name), avatar_url = COALESCE(?, avatar_url), last_seen_at = ? WHERE id = ?'
+    ).run(
+      input.email ?? null,
+      input.name ?? null,
+      seededDisplayName,
+      input.avatarUrl ?? null,
+      now,
+      existing.id
+    );
+    return {
+      ...existing,
+      email: input.email ?? existing.email,
+      name: input.name ?? existing.name,
+      display_name: seededDisplayName,
+      last_seen_at: now,
+    };
   }
 
   const id = crypto.randomUUID();
@@ -209,14 +282,26 @@ export function upsertUser(input: {
     provider_user_id: input.providerUserId,
     email: input.email ?? null,
     name: input.name ?? null,
+    display_name: deriveDisplayName(input.name),
     avatar_url: input.avatarUrl ?? null,
     vip: 0,
     created_at: now,
     last_seen_at: now,
   };
   d.prepare(
-    'INSERT INTO users (id, provider, provider_user_id, email, name, avatar_url, vip, created_at, last_seen_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)'
-  ).run(row.id, row.provider, row.provider_user_id, row.email, row.name, row.avatar_url, row.vip, row.created_at, row.last_seen_at);
+    'INSERT INTO users (id, provider, provider_user_id, email, name, display_name, avatar_url, vip, created_at, last_seen_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
+  ).run(
+    row.id,
+    row.provider,
+    row.provider_user_id,
+    row.email,
+    row.name,
+    row.display_name,
+    row.avatar_url,
+    row.vip,
+    row.created_at,
+    row.last_seen_at
+  );
   return row;
 }
 
@@ -474,7 +559,7 @@ export function getLeaderboard(opts: { sinceTs?: number; limit?: number } = {}):
     .prepare(
       `SELECT
         u.id                                       AS user_id,
-        COALESCE(u.name, 'Player')                 AS name,
+        COALESCE(u.display_name, u.name, 'Player') AS name,
         u.avatar_url                               AS avatar_url,
         SUM(a.points_earned)                       AS total_points,
         COUNT(DISTINCT a.game_id)                  AS games_played,
@@ -520,9 +605,13 @@ export function getGameLeaderboard(gameId: string, opts: { limit?: number } = {}
   const limit = opts.limit ?? 20;
   const rows = getDb()
     .prepare(
+      // For signed-in players the public name is u.display_name (first name
+       // only, set on sign-in). Anonymous players show whatever nickname they
+       // typed in at /join. COALESCE order is: display_name → users.name →
+       // players.name (the typed-in nickname).
       `SELECT
         p.id                                                       AS player_id,
-        p.name                                                     AS name,
+        COALESCE(u.display_name, u.name, p.name)                   AS name,
         u.avatar_url                                               AS avatar_url,
         p.final_score                                              AS total_score,
         COALESCE(SUM(CASE WHEN a.was_correct = 1 THEN 1 ELSE 0 END), 0) AS correct_count,

@@ -153,7 +153,8 @@ export default function HowItWorksPage() {
               >
                 Atenu.org
               </a>
-              , free study tools for Ethiopian high-school students preparing for ESSLCE.
+              , free study tools for Ethiopian high-school students preparing for
+              the ESSLCE (Ethiopian Secondary School Leaving Certificate Examination).
             </p>
           </details>
 

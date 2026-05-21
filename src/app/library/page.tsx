@@ -24,7 +24,9 @@ export const metadata = {
   },
 };
 
-const PAGE_SIZE = 6;
+// 12 keeps the page even (2-col grid × 6 rows) and fits the current
+// library on one page so the existing 11 quizzes don't orphan a card.
+const PAGE_SIZE = 12;
 
 export default async function LibraryPage({
   searchParams,

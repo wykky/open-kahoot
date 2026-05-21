@@ -111,8 +111,11 @@ export const palette = {
     error: 'bg-transparent', // Transparent to show body background pattern
     join: 'bg-transparent', // Transparent to show body background pattern
     host: 'bg-transparent', // Transparent to show body background pattern
-    leaderboard: accentColor.bg, // Purple background
-    finished: accentColor.bg, // Purple background
+    // Use transparent so the body's brand pattern (set in globals.css) shows
+    // through — keeps leaderboard + finished consistent with every other page
+    // instead of flipping to flat yellow.
+    leaderboard: 'bg-transparent',
+    finished: 'bg-transparent',
     thinking: 'bg-transparent', // Transparent to show body background pattern
     answering: 'bg-transparent', // Transparent to show body background pattern
     results: 'bg-transparent', // Transparent to show body background pattern
