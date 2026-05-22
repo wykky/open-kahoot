@@ -16,6 +16,7 @@ const cspHeader = [
 const nextConfig: NextConfig = {
   async headers() {
     return [
+      // Site-wide security headers.
       {
         source: "/:path*",
         headers: [
@@ -23,6 +24,26 @@ const nextConfig: NextConfig = {
           { key: "X-Frame-Options", value: "SAMEORIGIN" },
           { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
           { key: "Content-Security-Policy", value: cspHeader },
+        ],
+      },
+      // Agent-readable surfaces.
+      //
+      // Cloudflare Tunnel forwards Next.js's headers without rewriting, so
+      // this is the right layer for CORS + cache-control on /llms.txt and
+      // /robots.txt (analogous to public/_headers on the Astro subdomains
+      // that deploy via Cloudflare Pages).
+      {
+        source: "/llms.txt",
+        headers: [
+          { key: "Content-Type", value: "text/plain; charset=utf-8" },
+          { key: "Access-Control-Allow-Origin", value: "*" },
+          { key: "Cache-Control", value: "public, max-age=3600, s-maxage=86400" },
+        ],
+      },
+      {
+        source: "/robots.txt",
+        headers: [
+          { key: "Cache-Control", value: "public, max-age=3600, s-maxage=86400" },
         ],
       },
     ];
