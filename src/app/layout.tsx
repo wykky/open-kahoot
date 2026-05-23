@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Galindo, Coiny, Noto_Sans_Ethiopic } from "next/font/google";
 import "./globals.css";
+import Script from "next/script";
 import SessionWrapper from "@/components/SessionWrapper";
 
 const galindo = Galindo({
@@ -153,6 +154,17 @@ export default function RootLayout({
     <html lang="en">
       <head>
         <link rel="alternate" type="text/plain" title="LLM-readable index" href="/llms.txt" />
+        {/* Google Analytics 4 — network-wide property (G-66F8SPKEGH) */}
+        <Script
+          src="https://www.googletagmanager.com/gtag/js?id=G-66F8SPKEGH"
+          strategy="afterInteractive"
+        />
+        <Script id="ga4-init" strategy="afterInteractive">
+          {`window.dataLayer = window.dataLayer || [];
+          function gtag(){dataLayer.push(arguments);}
+          gtag('js', new Date());
+          gtag('config', 'G-66F8SPKEGH');`}
+        </Script>
       </head>
       <body
         className={`${galindo.variable} ${chango.variable} ${notoEthiopic.variable} antialiased`}

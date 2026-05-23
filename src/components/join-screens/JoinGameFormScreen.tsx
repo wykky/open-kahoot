@@ -40,6 +40,13 @@ export default function JoinGameFormScreen() {
     setIsJoining(true);
     setError('');
 
+    // GA4 conversion: player is starting a quiz
+    (window as Window & { gtag?: (...args: unknown[]) => void }).gtag?.(
+      'event',
+      'quiz_start',
+      { method: 'join' },
+    );
+
     const socket = getSocket();
 
     // Phase 2: existing persistentId is only useful if we ALSO have its playerToken.
