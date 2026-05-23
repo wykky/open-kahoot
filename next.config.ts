@@ -1,14 +1,14 @@
 import type { NextConfig } from "next";
 
-// CSP pins script origins to self only — no third-party widgets are loaded.
+// CSP allows self plus Google Analytics (gtag.js from googletagmanager.com).
 // frame-ancestors 'none' blocks clickjacking. 'unsafe-inline' is still required
 // for Next 15 bootstrap scripts; nonce migration is a separate task. img-src is
 // permissive because user-imported quiz images can come from anywhere.
 const cspHeader = [
   "default-src 'self'",
-  "script-src 'self' 'unsafe-inline'",
+  "script-src 'self' 'unsafe-inline' https://www.googletagmanager.com",
   "img-src 'self' data: https:",
-  "connect-src 'self' wss: https:",
+  "connect-src 'self' wss: https: https://www.google-analytics.com",
   "style-src 'self' 'unsafe-inline'",
   "frame-ancestors 'none'",
 ].join("; ");
