@@ -144,5 +144,13 @@ run_node \
   --think 5 --answer 20 \
   --description "Tenses, parts of speech, prepositions, subject-verb agreement, active vs passive voice."
 
+run_node \
+  --tsv "$(tsv_path world-cup-2026.tsv)" \
+  --slug world-cup-2026 \
+  --title "2026 FIFA World Cup Trivia" \
+  --subject "General Knowledge" --language en \
+  --think 5 --answer 20 \
+  --description "Hosts, results, awards, and records from the 2026 World Cup, where Spain beat Argentina 1-0 in the final. A fun mixed-difficulty round for any crowd."
+
 echo
 echo "✓ Library seeded. Visit https://live.atenu.org/library to verify."
