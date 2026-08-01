@@ -129,6 +129,14 @@ run_node \
   --description "Aksum, the Zagwe dynasty, Lalibela, the Solomonic line, Adwa, and the Italian invasion."
 
 run_node \
+  --tsv "$(tsv_path ethiopian-history-g9-12.tsv)" \
+  --slug ethiopian-history-g9-12 \
+  --title "History Grade 9-12: Ethiopian History (Aksum to the Derg)" \
+  --subject History --language en \
+  --think 8 --answer 22 \
+  --description "Thirty questions across the Ethiopian History arc, from Lucy and Aksum through Lalibela, Adwa, the Italian occupation, and the Derg. Grounded in the FDRE Grade 9-12 History textbooks, with per-question timing tuned for readers."
+
+run_node \
   --tsv "$(tsv_path economics-g11.tsv)" \
   --slug economics-g11-basic-economics \
   --title "Economics Grade 11 — Basic Economics" \
