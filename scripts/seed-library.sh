@@ -160,5 +160,13 @@ run_node \
   --think 5 --answer 20 \
   --description "Hosts, results, awards, and records from the 2026 World Cup, where Spain beat Argentina 1-0 in the final. A fun mixed-difficulty round for any crowd."
 
+run_node \
+  --tsv "$(tsv_path ethiopian-regions-cities.tsv)" \
+  --slug ethiopian-regions-cities \
+  --title "Ethiopian Regions and Cities" \
+  --subject Geography --language en \
+  --think 8 --answer 25 \
+  --description "Thirty questions on Ethiopia's current regional states and their cities, updated for the 2021 to 2023 map: Sidama, South West Ethiopia, South Ethiopia, and Central Ethiopia. Match cities to regions and zones, spot the odd one out, and trace routes across the new administrative boundaries."
+
 echo
 echo "✓ Library seeded. Visit https://live.atenu.org/library to verify."
