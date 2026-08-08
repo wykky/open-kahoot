@@ -51,15 +51,58 @@ function parseTsv(content) {
   return rows;
 }
 
-function shuffleArr(arr) {
-  // Shuffle option order ONCE at import time so the correct answer isn't always
-  // in slot A. The host's per-game shuffleAnswers setting layers on top of this.
+function shuffleArr(arr, rnd = Math.random) {
+  // Shuffle option order ONCE at import time. `rnd` lets callers pass a seeded
+  // PRNG so a re-seed reproduces the same layout instead of re-rolling it.
   const out = [...arr];
   for (let i = out.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
+    const j = Math.floor(rnd() * (i + 1));
     [out[i], out[j]] = [out[j], out[i]];
   }
   return out;
+}
+
+// Deterministic seeded PRNG (mulberry32 seeded via an xfnv1a string hash), so a
+// quiz's answer layout is reproducible across re-seeds rather than reshuffled
+// every run — the answer key stays stable once seeded.
+function seededRng(str) {
+  let h = 1779033703 ^ str.length;
+  for (let i = 0; i < str.length; i++) {
+    h = Math.imul(h ^ str.charCodeAt(i), 3432918353);
+    h = (h << 13) | (h >>> 19);
+  }
+  let a = h >>> 0;
+  return function () {
+    a |= 0;
+    a = (a + 0x6d2b79f5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+// Even, clump-free correct-answer slots across all N questions: each of the k
+// slots is used ~equally (e.g. 8/8/7/7 for 30 Q over 4 options) and no slot
+// repeats 3+ times in a row, so the game never shows a run like C, C, C, C.
+function balancedSlots(n, k, rng) {
+  const base = [];
+  for (let i = 0; i < n; i++) base.push(i % k);
+  for (let attempt = 0; attempt < 500; attempt++) {
+    const a = base.slice();
+    for (let i = a.length - 1; i > 0; i--) {
+      const j = Math.floor(rng() * (i + 1));
+      [a[i], a[j]] = [a[j], a[i]];
+    }
+    let ok = true;
+    for (let i = 2; i < a.length; i++) {
+      if (a[i] === a[i - 1] && a[i] === a[i - 2]) {
+        ok = false;
+        break;
+      }
+    }
+    if (ok) return a;
+  }
+  return base; // fallback: perfectly balanced, mild clumping tolerated
 }
 
 function main() {
@@ -97,17 +140,22 @@ function main() {
   const defaultAnswer = values.answer ? parseInt(values.answer, 10) : 20;
   const shuffleFlag = values.shuffle === '1' ? 1 : 0;
 
-  // Build canonical question objects — shuffle options once so slot A isn't
-  // always the correct one before any host-level shuffleAnswers kicks in.
-  const questions = rows.map((r) => {
-    const opts = [r.correct, r.wrong1, r.wrong2, r.wrong3];
-    const sh = shuffleArr(opts.map((o, i) => ({ o, originalIndex: i })));
-    const correctAnswer = sh.findIndex((s) => s.originalIndex === 0);
+  // Build canonical question objects. The correct answer is placed at an
+  // evenly-distributed, clump-free slot across the whole quiz (not shuffled
+  // independently per question) so the answer key can't drift toward one
+  // column or produce runs like C, C, C, C. Seeded by slug => reproducible.
+  const rng = seededRng(values.slug || values.tsv || 'atenu-live');
+  const slots = balancedSlots(rows.length, 4, rng);
+  const questions = rows.map((r, idx) => {
+    const distractors = shuffleArr([r.wrong1, r.wrong2, r.wrong3], rng);
+    const pos = slots[idx] % 4;
+    const options = distractors.slice();
+    options.splice(pos, 0, r.correct);
     const perQTime = r.time ? parseInt(r.time, 10) : NaN;
     return {
       text: r.question,
-      options: sh.map((s) => s.o),
-      correctAnswer,
+      options,
+      correctAnswer: pos,
       timeLimit: Number.isFinite(perQTime) ? perQTime : defaultAnswer,
       explanation: r.explanation || null,
       imageUrl: r.image || null,
