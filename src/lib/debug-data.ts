@@ -105,6 +105,9 @@ export const mockGame: Game = {
   hostId: 'host-1',
   title: 'Debug Quiz - General Knowledge',
   questions: mockQuestions,
+  // Mirrors what sanitizeGameForClient sends: real clients get an empty
+  // `questions` array plus this count, so debug screens must set it too.
+  totalQuestions: mockQuestions.length,
   settings: mockGameSettings,
   currentQuestionIndex: 2,
   status: 'thinking',
@@ -186,6 +189,35 @@ export const mockLeaderboard: Player[] = [
     score: 1100,
     isHost: false,
     isConnected: false
+  },
+  // Below the top-5 cutoff: lets debug screens exercise the "you placed outside
+  // the top 5" branch, and the tied 900s exercise tie-aware ranks (6,6,8).
+  {
+    id: 'player-6',
+    socketId: 'socket-frehiwot',
+    name: 'Frehiwot',
+    score: 900,
+    isHost: false,
+    isConnected: true,
+    rank: 6
+  },
+  {
+    id: 'player-7',
+    socketId: 'socket-getachew',
+    name: 'Getachew',
+    score: 900,
+    isHost: false,
+    isConnected: true,
+    rank: 6
+  },
+  {
+    id: 'player-8',
+    socketId: 'socket-hana',
+    name: 'Hana',
+    score: 640,
+    isHost: false,
+    isConnected: true,
+    rank: 8
   }
 ];
 

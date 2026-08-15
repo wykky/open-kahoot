@@ -55,6 +55,11 @@ export interface Game {
   hostId: string;
   title: string;
   questions: Question[];
+  // Number of questions in the quiz. Populated by sanitizeGameForClient, which
+  // empties `questions` before broadcasting so players can't read the answer key
+  // out of the socket payload. Client code must use this instead of
+  // `questions.length`, which is 0 on every client.
+  totalQuestions?: number;
   settings: GameSettings;
   currentQuestionIndex: number;
   status: GamePhase;

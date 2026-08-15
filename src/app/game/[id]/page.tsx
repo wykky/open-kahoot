@@ -15,6 +15,7 @@ import GameWaitingForResultsScreen from '@/components/game-screens/GameWaitingFo
 import GameAnsweringPhaseScreen from '@/components/game-screens/GameAnsweringPhaseScreen';
 import GameResultsPhaseScreen from '@/components/game-screens/GameResultsPhaseScreen';
 import GameFallbackScreen from '@/components/game-screens/GameFallbackScreen';
+import PlayerLeaderboardScreen from '@/components/game-screens/PlayerLeaderboardScreen';
 import { SkipForward, RotateCcw } from 'lucide-react';
 
 /**
@@ -407,6 +408,12 @@ export default function GamePage() {
         onNextQuestion={nextQuestion}
       />
     );
+  }
+  // Players get the standings too. Without this branch they fall through to
+  // GameFallbackScreen and just see "Waiting for the host...", even though the
+  // server already broadcast the leaderboard to them.
+  if (state.gameStatus === 'leaderboard') {
+    return <PlayerLeaderboardScreen leaderboard={state.leaderboard} game={state.game} />;
   }
   if (state.gameStatus === 'finished') {
     return (

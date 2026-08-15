@@ -16,9 +16,11 @@ export default function GameLeaderboardScreen({
   game,
   onNextQuestion
 }: GameLeaderboardScreenProps) {
-  const isLastQuestion = (game?.currentQuestionIndex ?? 0) + 1 >= (game?.questions.length ?? 0);
+  // `totalQuestions`, not `questions.length`: the server strips the question list
+  // from the client payload so players can't read the answer key out of the socket.
+  const totalQuestions = game?.totalQuestions ?? 0;
+  const isLastQuestion = (game?.currentQuestionIndex ?? 0) + 1 >= totalQuestions;
   const currentQuestion = (game?.currentQuestionIndex ?? 0) + 1;
-  const totalQuestions = game?.questions.length ?? 0;
 
   return (
     <PageLayout gradient="waiting" maxWidth="4xl" showLogo={false}>

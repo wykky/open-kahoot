@@ -1,6 +1,7 @@
 'use client';
 
 import PageLayout from '@/components/PageLayout';
+import QuestionCounter from '@/components/QuestionCounter';
 import Timer from '@/components/Timer';
 import HostThinkingScreen from '@/components/host-screens/HostThinkingScreen';
 import PlayerThinkingScreen from '@/components/player-screens/PlayerThinkingScreen';
@@ -27,6 +28,7 @@ export default function GameThinkingPhaseScreen({
     <PageLayout gradient="thinking" maxWidth="4xl" showLogo={false}>
       <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
         <div className="shrink-0">
+          <QuestionCounter game={game} className="mb-3" />
           <Timer
             timeLeft={timeLeft}
             totalTime={game?.settings.thinkTime || 5}

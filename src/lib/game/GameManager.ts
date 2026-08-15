@@ -187,7 +187,21 @@ export class GameManager {
  * = 12k records, ~200 bytes each = ~2.4 MB). Multiplying that by every emit to every
  * socket is O(n²) bandwidth. Clients never read it — it's only used server-side for
  * the TSV log export. This helper returns a shallow copy with `answerHistory: []`.
+ *
+ * `questions` is emptied for the same reason plus a correctness one: every Question
+ * carries `correctAnswer`, and this object is broadcast to the whole game room
+ * (`io.to(game.id)`), so shipping it let any player read the entire answer key out
+ * of the socket payload in devtools before the first question was even asked. The
+ * gameplay loop already sends each question separately, per socket, at the moment
+ * it is due — see GameplayLoop's getShuffledQuestionForPlayer — so no client ever
+ * needed the full list. Only the count was actually used, and that is preserved as
+ * `totalQuestions`.
  */
 export function sanitizeGameForClient(game: Game): Game {
-  return { ...game, answerHistory: [] };
+  return {
+    ...game,
+    answerHistory: [],
+    questions: [],
+    totalQuestions: game.questions.length,
+  };
 }

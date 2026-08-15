@@ -3,6 +3,7 @@
 import { Clock } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { getGradient, accent } from '@/lib/palette';
+import QuestionCounter from '@/components/QuestionCounter';
 import HostAnsweringScreen from '@/components/host-screens/HostAnsweringScreen';
 import PlayerAnsweringScreen from '@/components/player-screens/PlayerAnsweringScreen';
 import PlayerWaitingScreen from '@/components/player-screens/PlayerWaitingScreen';
@@ -67,6 +68,10 @@ export default function GameAnsweringPhaseScreen({
   return (
     <div className={`h-dvh overflow-hidden ${getGradient('answering')} p-3 sm:p-6 flex`}>
       <div className="container mx-auto max-w-4xl flex flex-col min-h-0 flex-1">
+        {/* Progress counter — deliberately OUTSIDE the timer block below, which is
+            desktop-only. Players answer on phones, so this has to render there too. */}
+        <QuestionCounter game={game} className="mb-2 shrink-0" />
+
         {/* Timer — compact, desktop only (mobile hides to save space) */}
         <div className="hidden sm:block text-center mb-3 shrink-0">
           <div className="flex items-center justify-center gap-2 mb-1">
