@@ -173,7 +173,7 @@ run_node \
   --slug ethiopian-politics-politicians \
   --title "Ethiopian Politics and Politicians" \
   --subject Civics --language en \
-  --think 8 --answer 20 \
+  --think 8 --answer 10 \
   --description "Thirty questions on how Ethiopia is governed and who governs it: the FDRE Constitution, the two federal houses, the National Election Board, and the leaders from Menelik II and Haile Selassie through the Derg to Abiy Ahmed. Fact-checked to 15 August 2026, including the seventh general election."
 
 echo
