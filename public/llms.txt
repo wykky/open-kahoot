@@ -59,6 +59,7 @@ homepage and `/join` are the only canonically indexable surfaces.
 ## Contact
 
 - info@atenu.org — general inquiries, partnership requests, AI-training licensing
+- https://t.me/atenuChannel (@atenuChannel) — Telegram channel, fastest route for support
 
 ## Network
 

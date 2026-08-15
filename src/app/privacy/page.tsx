@@ -137,10 +137,19 @@ export default function PrivacyPage() {
             <p className="px-3 pb-3 text-gray-800 text-sm">
               Email{' '}
               <a
-                href="mailto:hello@atenu.org"
+                href="mailto:info@atenu.org"
                 className="text-yellow-700 underline hover:text-yellow-800"
               >
-                hello@atenu.org
+                info@atenu.org
+              </a>{' '}
+              or message us on Telegram at{' '}
+              <a
+                href="https://t.me/atenuChannel"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-yellow-700 underline hover:text-yellow-800"
+              >
+                @atenuChannel
               </a>{' '}
               and we will delete your account, export your quizzes, or answer
               any question about your data within a few working days.
