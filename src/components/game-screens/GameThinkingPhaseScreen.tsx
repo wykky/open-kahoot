@@ -13,6 +13,7 @@ interface GameThinkingPhaseScreenProps {
   game: Game | null;
   isHost: boolean;
   isPlayer: boolean;
+  questionIndex: number | null;
 }
 
 export default function GameThinkingPhaseScreen({
@@ -20,7 +21,8 @@ export default function GameThinkingPhaseScreen({
   timeLeft,
   game,
   isHost,
-  isPlayer
+  isPlayer,
+  questionIndex
 }: GameThinkingPhaseScreenProps) {
   const showOnPlayers = game?.settings.showQuestionOnPlayers ?? true;
 
@@ -28,7 +30,7 @@ export default function GameThinkingPhaseScreen({
     <PageLayout gradient="thinking" maxWidth="4xl" showLogo={false}>
       <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
         <div className="shrink-0">
-          <QuestionCounter game={game} className="mb-3" />
+          <QuestionCounter questionIndex={questionIndex} total={game?.totalQuestions ?? 0} className="mb-3" />
           <Timer
             timeLeft={timeLeft}
             totalTime={game?.settings.thinkTime || 5}

@@ -17,6 +17,7 @@ function GameThinkingContent() {
       currentQuestion={mockQuestions[2]}
       timeLeft={3}
       game={mockGame}
+      questionIndex={mockGame.currentQuestionIndex}
       isHost={isHost}
       isPlayer={isPlayer}
     />
@@ -25,7 +26,7 @@ function GameThinkingContent() {
 
 export default function DebugGameThinkingPage() {
   return (
-    <Suspense fallback={<GameThinkingPhaseScreen currentQuestion={mockQuestions[0]} timeLeft={3} game={mockGame} isHost={true} isPlayer={false} />}>
+    <Suspense fallback={<GameThinkingPhaseScreen currentQuestion={mockQuestions[0]} timeLeft={3} game={mockGame} questionIndex={mockGame.currentQuestionIndex} isHost={true} isPlayer={false} />}>
       <GameThinkingContent />
     </Suspense>
   );

@@ -47,6 +47,7 @@ interface GameAnsweringPhaseScreenProps {
   isPlayer: boolean;
   onSubmitAnswer: (answer: number | number[]) => void;
   hasAnswered: boolean;
+  questionIndex: number | null;
 }
 
 export default function GameAnsweringPhaseScreen({
@@ -56,7 +57,8 @@ export default function GameAnsweringPhaseScreen({
   isHost,
   isPlayer,
   onSubmitAnswer,
-  hasAnswered
+  hasAnswered,
+  questionIndex
 }: GameAnsweringPhaseScreenProps) {
   const showOnPlayers = game?.settings.showQuestionOnPlayers ?? true;
 
@@ -70,7 +72,7 @@ export default function GameAnsweringPhaseScreen({
       <div className="container mx-auto max-w-4xl flex flex-col min-h-0 flex-1">
         {/* Progress counter — deliberately OUTSIDE the timer block below, which is
             desktop-only. Players answer on phones, so this has to render there too. */}
-        <QuestionCounter game={game} className="mb-2 shrink-0" />
+        <QuestionCounter questionIndex={questionIndex} total={game?.totalQuestions ?? 0} className="mb-2 shrink-0" />
 
         {/* Timer — compact, desktop only (mobile hides to save space) */}
         <div className="hidden sm:block text-center mb-3 shrink-0">

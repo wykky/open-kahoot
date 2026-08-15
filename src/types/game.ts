@@ -146,6 +146,11 @@ export interface PhaseDeadline {
   serverNow: number;      // server's Date.now() at emit time
   deadlineMs: number;     // server's absolute deadline timestamp
   qEpoch: number;         // monotonically increasing per phase entry; used to reject stale answers
+  // 0-based index of the question this phase belongs to. Required, so the compiler
+  // catches any emit site that forgets it. Clients CANNOT use game.currentQuestionIndex
+  // for this: the Game object is only re-broadcast on gameStarted / leaderboardShown,
+  // so during play it lags one question behind (and reads -1 on the very first).
+  questionIndex: number;
 }
 
 // Socket Events

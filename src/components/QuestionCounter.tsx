@@ -1,30 +1,34 @@
 'use client';
 
-import type { Game } from '@/types/game';
-
 /**
  * "Question 4 of 30" progress pill, shown during the thinking and answering
- * phases on both the host screen and player devices so students can see how
- * much of the quiz is left.
+ * phases on both the host screen and player devices.
  *
- * Reads `totalQuestions` (a plain count) rather than `questions.length`: the
- * server strips the question list out of the client payload so players can't
- * read ahead to the correct answers, and sends only the count instead.
+ * Takes the index EXPLICITLY rather than reading it off the Game object. The
+ * server only re-broadcasts the Game on gameStarted and leaderboardShown, so
+ * `game.currentQuestionIndex` is stale for the whole of every question: it reads
+ * -1 during question 1 (rendering "Question 0 of 30") and then trails one behind
+ * for the rest of the quiz. The authoritative per-question value rides on the
+ * phase deadline instead — see PhaseDeadline.questionIndex.
  *
- * Renders nothing when the count is unknown (e.g. a brief window during
- * reconnect) rather than showing a misleading "Question 1 of 0".
+ * `total` comes from Game.totalQuestions, which is safe: it is fixed for the
+ * whole game, so a stale Game object still carries the right number.
+ *
+ * Renders nothing until both values are known, rather than flashing a
+ * misleading "Question 0 of 0" during connect/reconnect.
  */
 export default function QuestionCounter({
-  game,
+  questionIndex,
+  total,
   className = '',
 }: {
-  game: Game | null;
+  questionIndex: number | null;
+  total: number;
   className?: string;
 }) {
-  const total = game?.totalQuestions ?? 0;
-  if (!game || total <= 0) return null;
+  if (questionIndex === null || questionIndex < 0 || total <= 0) return null;
 
-  const current = Math.min((game.currentQuestionIndex ?? 0) + 1, total);
+  const current = Math.min(questionIndex + 1, total);
 
   return (
     <div className={`text-center ${className}`}>

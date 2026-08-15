@@ -69,6 +69,11 @@ interface GameState {
   isValidating: boolean;
   hostReconnecting: boolean;
   qEpoch: number | null; // Phase 6: stale-answer guard
+  // 0-based index of the question currently in play, taken from the phase deadline.
+  // Do NOT read game.currentQuestionIndex for this: the Game object is only
+  // re-broadcast on gameStarted / leaderboardShown, so during play it lags a
+  // question behind (and is -1 during the very first question).
+  questionIndex: number | null;
 }
 
 type GameAction =
@@ -115,6 +120,7 @@ function gameReducer(state: GameState, action: GameAction): GameState {
         personalResult: null,
         gameStatus: 'thinking',
         qEpoch: action.payload.deadline?.qEpoch ?? state.qEpoch,
+        questionIndex: action.payload.deadline?.questionIndex ?? state.questionIndex,
       };
     }
     case 'START_ANSWERING_PHASE': {
@@ -129,6 +135,7 @@ function gameReducer(state: GameState, action: GameAction): GameState {
         phase: 'answering',
         gameStatus: 'answering',
         qEpoch: action.payload.deadline?.qEpoch ?? state.qEpoch,
+        questionIndex: action.payload.deadline?.questionIndex ?? state.questionIndex,
       };
     }
     case 'SUBMIT_ANSWER':
@@ -173,6 +180,7 @@ const initialState: GameState = {
   isValidating: true,
   hostReconnecting: false,
   qEpoch: null,
+  questionIndex: null,
 };
 
 export default function GamePage() {
@@ -434,6 +442,7 @@ export default function GamePage() {
           game={state.game}
           isHost={isHost}
           isPlayer={isPlayer}
+          questionIndex={state.questionIndex}
         />
         {isHost && <HostPhaseControls onSkip={skipQuestion} onRestart={restartQuestion} />}
       </>
@@ -453,6 +462,7 @@ export default function GamePage() {
           isPlayer={isPlayer}
           onSubmitAnswer={submitAnswer}
           hasAnswered={state.hasAnswered}
+          questionIndex={state.questionIndex}
         />
         {isHost && <HostPhaseControls onSkip={skipQuestion} onRestart={restartQuestion} />}
       </>

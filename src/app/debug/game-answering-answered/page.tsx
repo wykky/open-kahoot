@@ -10,6 +10,7 @@ export default function DebugGameAnsweringAnsweredPage() {
       currentQuestion={mockQuestions[2]}
       timeLeft={15}
       game={mockGame}
+      questionIndex={mockGame.currentQuestionIndex}
       isHost={false}
       isPlayer={true}
       onSubmitAnswer={() => {}}

@@ -5,7 +5,10 @@ import { getGradient } from '@/lib/palette';
 import type { Player, Game } from '@/types/game';
 
 const PLAYER_ID_KEY = (pin: string) => `player_id_${pin}`;
-const TOP_N = 5;
+// Top 3 mid-game, not 5: on a phone, 5 rows plus the player's own row plus the
+// "next question" banner crowds the screen. 3 also means every visible row is a
+// podium medal. The player's own standing is always shown regardless of rank.
+const TOP_N = 3;
 
 /** Medal for the podium, plain number after that. */
 function rankBadge(rank: number) {
@@ -80,7 +83,12 @@ export default function PlayerLeaderboardScreen({
 
   return (
     <div className={`h-dvh overflow-hidden ${getGradient('waiting')} flex flex-col p-4 sm:p-6`}>
-      <div className="mx-auto flex w-full max-w-md flex-1 flex-col min-h-0">
+      {/* justify-center, and the list is NOT flex-1: with only a couple of players
+          a growing list would pin the "next question" banner to the bottom of the
+          screen with a large dead gap above it. Centring keeps the whole block
+          together at any player count, and the list still shrinks + scrolls when
+          the class is big. */}
+      <div className="mx-auto flex w-full max-w-md flex-1 flex-col justify-center gap-5 min-h-0">
         <div className="shrink-0 text-center">
           <h1 className="text-2xl font-bold text-black sm:text-3xl">Leaderboard</h1>
           {total > 0 && (
@@ -90,7 +98,7 @@ export default function PlayerLeaderboardScreen({
           )}
         </div>
 
-        <div className="mt-4 flex-1 space-y-2 overflow-y-auto min-h-0">
+        <div className="space-y-2 overflow-y-auto min-h-0">
           {top.length === 0 ? (
             <p className="text-center text-gray-600">No scores yet.</p>
           ) : (
@@ -114,14 +122,16 @@ export default function PlayerLeaderboardScreen({
           )}
         </div>
 
-        <div className="shrink-0 pt-4 text-center">
-          <p className="text-base font-semibold text-black">Next question coming up...</p>
-          <div className="mt-3 flex justify-center">
-            <div className="flex animate-pulse space-x-1">
-              <div className="h-2 w-2 rounded-full bg-gray-400" />
-              <div className="h-2 w-2 rounded-full bg-gray-400" />
-              <div className="h-2 w-2 rounded-full bg-gray-400" />
-            </div>
+        <div className="shrink-0 flex justify-center">
+          <div className="flex items-center gap-3 rounded-2xl border-4 border-black bg-white px-5 py-3 shadow-[4px_4px_0_0_#000]">
+            <span className="text-lg font-bold text-black sm:text-xl">
+              Next question coming up
+            </span>
+            <span className="flex gap-1" aria-hidden="true">
+              <span className="h-2 w-2 animate-bounce rounded-full bg-black [animation-delay:-0.3s]" />
+              <span className="h-2 w-2 animate-bounce rounded-full bg-black [animation-delay:-0.15s]" />
+              <span className="h-2 w-2 animate-bounce rounded-full bg-black" />
+            </span>
           </div>
         </div>
       </div>

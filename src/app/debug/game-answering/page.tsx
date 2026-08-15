@@ -17,6 +17,7 @@ function GameAnsweringContent() {
       currentQuestion={mockQuestions[2]}
       timeLeft={15}
       game={mockGame}
+      questionIndex={mockGame.currentQuestionIndex}
       isHost={isHost}
       isPlayer={isPlayer}
       onSubmitAnswer={() => {}}
@@ -27,7 +28,7 @@ function GameAnsweringContent() {
 
 export default function DebugGameAnsweringPage() {
   return (
-    <Suspense fallback={<GameAnsweringPhaseScreen currentQuestion={mockQuestions[0]} timeLeft={15} game={mockGame} isHost={true} isPlayer={false} onSubmitAnswer={() => {}} hasAnswered={false} />}>
+    <Suspense fallback={<GameAnsweringPhaseScreen currentQuestion={mockQuestions[0]} timeLeft={15} game={mockGame} questionIndex={mockGame.currentQuestionIndex} isHost={true} isPlayer={false} onSubmitAnswer={() => {}} hasAnswered={false} />}>
       <GameAnsweringContent />
     </Suspense>
   );

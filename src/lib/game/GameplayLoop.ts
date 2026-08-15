@@ -192,7 +192,7 @@ export class GameplayLoop {
 
     if (phase === 'thinking') {
       game.phaseStartTime = now - (game.settings.thinkTime * 1000 - remainingMs);
-      const deadline = { serverNow: now, deadlineMs, qEpoch: game.qEpoch };
+      const deadline = { serverNow: now, deadlineMs, qEpoch: game.qEpoch, questionIndex: game.currentQuestionIndex };
       if (game.settings.shuffleAnswers) {
         game.players.forEach((p) => {
           if (!p.isConnected) return;
@@ -213,6 +213,7 @@ export class GameplayLoop {
         serverNow: now,
         deadlineMs,
         qEpoch: game.qEpoch,
+        questionIndex: game.currentQuestionIndex,
       });
       this.timerManager.setAnsweringPhaseTimer(game.id, () => {
         console.log(`[PIN ${game.pin}] Answering time + grace expired, moving to results`);
@@ -283,7 +284,7 @@ export class GameplayLoop {
     game.qEpoch = (game.qEpoch ?? 0) + 1;
     const now = Date.now();
     const deadlineMs = now + game.settings.thinkTime * 1000;
-    const deadline = { serverNow: now, deadlineMs, qEpoch: game.qEpoch };
+    const deadline = { serverNow: now, deadlineMs, qEpoch: game.qEpoch, questionIndex: game.currentQuestionIndex };
     if (game.settings.shuffleAnswers) {
       // Per-player shuffled emit. Host gets the canonical order (projector view).
       game.players.forEach((p) => {
@@ -312,6 +313,7 @@ export class GameplayLoop {
       serverNow: now,
       deadlineMs,
       qEpoch: game.qEpoch,
+      questionIndex: game.currentQuestionIndex,
     });
     // Server expires phase at deadline + grace so late submissions still land
     // setAnsweringPhaseTimer expects seconds; we add 1s grace (ANSWER_GRACE_MS = 1000)
@@ -453,6 +455,7 @@ export class GameplayLoop {
               serverNow: now,
               deadlineMs,
               qEpoch: game.qEpoch ?? 0,
+              questionIndex: game.currentQuestionIndex,
             });
           }
         }
@@ -477,6 +480,7 @@ export class GameplayLoop {
             serverNow: thinkNow,
             deadlineMs: thinkDeadline,
             qEpoch: game.qEpoch ?? 0,
+            questionIndex: game.currentQuestionIndex,
           });
           const delay = isHost ? 2000 : 100;
           setTimeout(() => {
@@ -488,6 +492,7 @@ export class GameplayLoop {
                 serverNow: now,
                 deadlineMs,
                 qEpoch: game.qEpoch ?? 0,
+                questionIndex: game.currentQuestionIndex,
               });
             }
           }, delay);
