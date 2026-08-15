@@ -168,5 +168,13 @@ run_node \
   --think 8 --answer 25 \
   --description "Thirty questions on Ethiopia's current regional states and their cities, updated for the 2021 to 2023 map: Sidama, South West Ethiopia, South Ethiopia, and Central Ethiopia. Match cities to regions and zones, spot the odd one out, and trace routes across the new administrative boundaries."
 
+run_node \
+  --tsv "$(tsv_path ethiopian-politics-politicians.tsv)" \
+  --slug ethiopian-politics-politicians \
+  --title "Ethiopian Politics and Politicians" \
+  --subject Civics --language en \
+  --think 8 --answer 20 \
+  --description "Thirty questions on how Ethiopia is governed and who governs it: the FDRE Constitution, the two federal houses, the National Election Board, and the leaders from Menelik II and Haile Selassie through the Derg to Abiy Ahmed. Fact-checked to 15 August 2026, including the seventh general election."
+
 echo
 echo "✓ Library seeded. Visit https://live.atenu.org/library to verify."
