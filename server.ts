@@ -121,6 +121,13 @@ app.prepare().then(() => {
     addTrailingSlash: false,
     // 512 KB cap — generous for a ~100-question quiz import, blocks 100MB DoS payloads
     maxHttpBufferSize: 512 * 1024,
+    // Socket.io v4 ships with WebSocket compression OFF. Our payloads are highly
+    // repetitive JSON (player rosters, leaderboards), which deflates roughly 40x —
+    // a 200-player leaderboard packet measured 136 KB raw vs 3.1 KB deflated. On a
+    // shared classroom uplink in Ethiopia, bytes are latency, so this is the single
+    // cheapest win available. threshold:1024 leaves the small hot-path frames
+    // (answeringPhase, per-answer acks) uncompressed so we don't burn CPU on them.
+    perMessageDeflate: { threshold: 1024 },
     cors: {
       origin: allowedOrigins,
       methods: ['GET', 'POST'],

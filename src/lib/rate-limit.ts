@@ -115,9 +115,21 @@ export const downloadLogsLimiter  = new RateLimiter('downloadLogs.ip', { capacit
 // Hosts click these once per question; 30/sec covers heavy debugging and keyboard mashing.
 export const hostEventLimiter     = new RateLimiter('hostEvents.hostId', { capacity: 30, refillIntervalMs: 1000 });
 
-// Connection-level: throttle new socket opens per IP. 30 / 10s catches reconnect storms
-// without hurting a class opening tabs in unison.
-export const connectionLimiter    = new RateLimiter('connection.ip',   { capacity: 30, refillIntervalMs: 2000 });
+// Connection-level: throttle new socket opens per IP.
+//
+// WAS capacity 30 / refill 2000ms, whose comment claimed "30 / 10s ... without hurting
+// a class opening tabs in unison". That was wrong twice over: 1 token per 2000ms is
+// 0.5/s (30 per MINUTE, not per 10s), and this gate sits IN FRONT of joinGameIpLimiter,
+// so the capacity-250 classroom allowance below could never be reached. A 200-student
+// class behind one school IP or Ethio Telecom CGNAT is a single bucket key
+// (getSocketIp reads cf-connecting-ip), so 30 students connected and the other 170
+// were disconnect(true)'d and admitted at 0.5/s — roughly 340s for the class to get in,
+// while socket.io-client (reconnectionAttempts: Infinity) retried every 1-5s throughout.
+//
+// Now sized to match joinGameIpLimiter's classroom reasoning: absorb the whole
+// "everyone opens the link at once" burst, then sustain 5/s for trickle-in and
+// reconnects. Still bounds a botnet to 5 new sockets/s per IP.
+export const connectionLimiter    = new RateLimiter('connection.ip',   { capacity: 300, refillIntervalMs: 200 });
 
 // AI question generation: 30/min per signed-in user, 10/min per IP as a backstop.
 // gpt-4o-mini at ~$0.001/req → $1.80/hr ceiling per user worst-case.
