@@ -176,5 +176,13 @@ run_node \
   --think 8 --answer 10 \
   --description "Thirty questions on how Ethiopia is governed and who governs it: the FDRE Constitution, the two federal houses, the National Election Board, and the leaders from Menelik II and Haile Selassie through the Derg to Abiy Ahmed. Fact-checked to 15 August 2026, including the seventh general election."
 
+run_node \
+  --tsv "$(tsv_path ethiopian-culture-challenge.tsv)" \
+  --slug ethiopian-culture-challenge \
+  --title "Ethiopian Culture Challenge" \
+  --subject Culture --language en \
+  --think 8 --answer 10 \
+  --description "Thirty questions on Ethiopian music, art, calendar and heritage: Mulatu Astatke and Ethio-jazz, Afewerk Tekle and Africa Hall, the fidel and the thirteen months, Timkat and Meskel, the Gada system, Fichee-Chambalaalla, Shuwalid and Gifaataa, and the World Heritage sites at Lalibela, Harar Jugol, Tiya, Konso and Aksum. Written in simple English for high-school students."
+
 echo
 echo "✓ Library seeded. Visit https://live.atenu.org/library to verify."
