@@ -184,5 +184,13 @@ run_node \
   --think 8 --answer 10 \
   --description "Thirty questions on Ethiopian music, art, calendar and heritage: Mulatu Astatke and Ethio-jazz, Afewerk Tekle and Africa Hall, the fidel and the thirteen months, Timkat and Meskel, the Gada system, Fichee-Chambalaalla, Shuwalid and Gifaataa, and the World Heritage sites at Lalibela, Harar Jugol, Tiya, Konso and Aksum. Written in simple English for high-school students."
 
+run_node \
+  --tsv "$(tsv_path ethiopian-sport-and-athletes.tsv)" \
+  --slug ethiopian-sport-and-athletes \
+  --title "Ethiopian Sport and Athletes" \
+  --subject Sport --language en \
+  --think 8 --answer 10 \
+  --description "Thirty questions on Ethiopia's sporting greats: Abebe Bikila barefoot in Rome, Mamo Wolde and Miruts Yifter, Derartu Tulu and Fatuma Roba, Haile Gebrselassie and Kenenisa Bekele, Tirunesh Dibaba and Almaz Ayana, Selemon Barega and Tamirat Tola, plus the 1962 Africa Cup of Nations win and the Great Ethiopian Run. Written in simple English for high-school students."
+
 echo
 echo "✓ Library seeded. Visit https://live.atenu.org/library to verify."
