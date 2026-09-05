@@ -192,5 +192,13 @@ run_node \
   --think 8 --answer 10 \
   --description "Thirty questions on Ethiopia's sporting greats: Abebe Bikila barefoot in Rome, Mamo Wolde and Miruts Yifter, Derartu Tulu and Fatuma Roba, Haile Gebrselassie and Kenenisa Bekele, Tirunesh Dibaba and Almaz Ayana, Selemon Barega and Tamirat Tola, plus the 1962 Africa Cup of Nations win and the Great Ethiopian Run. Written in simple English for high-school students."
 
+run_node \
+  --tsv "$(tsv_path west-african-capitals.tsv)" \
+  --slug west-african-capitals \
+  --title "West African Capitals and Cities" \
+  --subject Geography --language en \
+  --think 8 --answer 10 \
+  --description "Thirty questions on the capitals and historic cities of West Africa: Cotonou and Abomey, Yamoussoukro and Grand-Bassam, Zinder and Agadez, Bolama and Bissau, Banjul once Bathurst, Praia and Mindelo in Cabo Verde, Saint-Louis and Dakar, Timbuktu, Gao and Djenne in Mali, Kumasi and Cape Coast in Ghana, Abeokuta, Lokoja and Kano in Nigeria, and the founding of Monrovia, Freetown and Conakry. Written in simple English for high-school students."
+
 echo
 echo "✓ Library seeded. Visit https://live.atenu.org/library to verify."
